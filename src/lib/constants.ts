@@ -1,6 +1,6 @@
 // Cambia esto si tu moneda o localización es distinta.
-export const LOCALE = "es-CO";
-export const CURRENCY = "COP";
+export const LOCALE = "es-MX";
+export const CURRENCY = "MXN";
 
 export const CATEGORY_COLORS = [
   "#0a84ff",
