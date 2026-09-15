@@ -24,6 +24,7 @@ type SerializedPayment = {
   id: string;
   name: string;
   amount: string;
+  kind: "EXPENSE" | "INCOME";
   dueDay: number;
   dueMonth: number | null;
   frequency: "MONTHLY" | "WEEKLY" | "YEARLY";
@@ -47,6 +48,7 @@ function PaymentForm({
   defaults?: {
     name: string;
     amount: string;
+    kind: string;
     dueDay: number;
     dueMonth: number | null;
     frequency: string;
@@ -72,6 +74,18 @@ function PaymentForm({
         Monto
         <Input name="amount" type="number" step="0.01" min="0.01" required defaultValue={defaults?.amount} />
       </Field>
+      <Field>
+        Tipo
+        <Select name="kind" defaultValue={defaults?.kind ?? "EXPENSE"}>
+          <option value="EXPENSE">Pago que hago</option>
+          <option value="INCOME">Ingreso que recibo</option>
+        </Select>
+        <span className="text-[12px] text-(--foreground-subtle)">
+          Los ingresos fijos (tu sueldo) no generan recordatorios; sirven para calcular
+          cuánto tienes disponible hasta el próximo depósito.
+        </span>
+      </Field>
+
       <Field>
         Frecuencia
         <Select name="frequency" value={frequency} onChange={(e) => setFrequency(e.target.value)}>
@@ -195,10 +209,18 @@ export function FixedPaymentsClient({
                     <p className="truncate text-[15px] font-medium">{p.name}</p>
                   </div>
                   <p className="mt-1 text-[12px] text-(--foreground-subtle)">
+                    {p.kind === "INCOME" ? "Ingreso · " : ""}
                     {FREQUENCY_LABELS[p.frequency]} · {p.category?.name ?? "Sin categoría"}
                   </p>
                 </div>
-                <p className="shrink-0 text-[16px] font-semibold">{formatCurrency(p.amount)}</p>
+                <p
+                  className={`shrink-0 text-[16px] font-semibold ${
+                    p.kind === "INCOME" ? "text-(--success)" : ""
+                  }`}
+                >
+                  {p.kind === "INCOME" ? "+" : ""}
+                  {formatCurrency(p.amount)}
+                </p>
               </div>
 
               <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
@@ -264,6 +286,7 @@ export function FixedPaymentsClient({
             defaults={{
               name: editing.name,
               amount: editing.amount,
+              kind: editing.kind,
               dueDay: editing.dueDay,
               dueMonth: editing.dueMonth,
               frequency: editing.frequency,

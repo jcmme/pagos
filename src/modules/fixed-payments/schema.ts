@@ -4,6 +4,7 @@ export const fixedPaymentSchema = z
   .object({
     name: z.string().trim().min(1, "El nombre es obligatorio").max(60),
     amount: z.coerce.number().positive("El monto debe ser mayor a 0"),
+    kind: z.enum(["EXPENSE", "INCOME"]).default("EXPENSE"),
     frequency: z.enum(["MONTHLY", "WEEKLY", "YEARLY"]),
     dueDay: z.coerce.number().int().min(1).max(31),
     dueMonth: z.coerce.number().int().min(1).max(12).optional().nullable(),

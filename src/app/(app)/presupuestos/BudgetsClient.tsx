@@ -1,7 +1,6 @@
 "use client";
 
 import { useActionState } from "react";
-import type { Category } from "@prisma/client";
 import { Trash2 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -11,7 +10,13 @@ import { formatCurrency } from "@/lib/utils";
 import { upsertBudget, deleteBudget, ActionState } from "@/modules/budgets/actions";
 
 type Row = {
-  category: Category;
+  category: {
+    id: string;
+    name: string;
+    color: string;
+    parentId: string | null;
+    parent: { name: string } | null;
+  };
   budget: { id: string; amount: string } | null;
   spent: number;
 };
@@ -28,7 +33,12 @@ function BudgetRow({ row, month, year }: { row: Row; month: number; year: number
       <div className="mb-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="h-2.5 w-2.5 rounded-full" style={{ background: row.category.color }} />
-          <p className="text-[15px] font-medium">{row.category.name}</p>
+          <p className="text-[15px] font-medium">
+            {row.category.parent && (
+              <span className="text-(--foreground-subtle)">{row.category.parent.name} › </span>
+            )}
+            {row.category.name}
+          </p>
         </div>
         <p className={`text-[13px] ${over ? "text-(--danger)" : "text-(--foreground-muted)"}`}>
           {formatCurrency(row.spent)} {row.budget && `/ ${formatCurrency(budgetAmount)}`}

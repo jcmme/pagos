@@ -1,17 +1,14 @@
 import { prisma } from "@/lib/prisma";
+import { serialize } from "@/lib/utils";
 import { CategoriesClient } from "./CategoriesClient";
 
 export const dynamic = "force-dynamic";
 
 export default async function CategoriasPage() {
   const categories = await prisma.category.findMany({
-    orderBy: { name: "asc" },
+    include: { parent: true, _count: { select: { transactions: true, children: true } } },
+    orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
   });
 
-  return (
-    <div>
-      <h1 className="mb-6 text-[26px] font-semibold">Categorías</h1>
-      <CategoriesClient categories={categories} />
-    </div>
-  );
+  return <CategoriesClient categories={serialize(categories)} />;
 }

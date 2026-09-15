@@ -1,7 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import { currentMonthYear, monthRange } from "@/lib/dates";
+import { serialize, toNumber } from "@/lib/utils";
 import { MonthNav } from "@/components/layout/MonthNav";
 import { BudgetsClient } from "./BudgetsClient";
+
+export const dynamic = "force-dynamic";
 
 export default async function PresupuestosPage({
   searchParams,
@@ -14,26 +17,44 @@ export default async function PresupuestosPage({
   const year = Number(params.year) || fallback.year;
   const { start, end } = monthRange(year, month);
 
-  const [categories, budgets, expensesByCategory] = await Promise.all([
-    prisma.category.findMany({ orderBy: { name: "asc" } }),
+  const [categories, budgets, spentByCategory] = await Promise.all([
+    prisma.category.findMany({
+      where: { archived: false },
+      include: { parent: true },
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+    }),
     prisma.budget.findMany({ where: { month, year } }),
-    prisma.expense.groupBy({
+    prisma.transaction.groupBy({
       by: ["categoryId"],
-      where: { date: { gte: start, lt: end } },
+      where: {
+        kind: "EXPENSE",
+        excludeFromStats: false,
+        date: { gte: start, lt: end },
+      },
       _sum: { amount: true },
     }),
   ]);
 
-  const spentByCategory = new Map(
-    expensesByCategory.map((e) => [e.categoryId, Number(e._sum.amount ?? 0)])
+  const spent = new Map(
+    spentByCategory.map((row) => [row.categoryId, toNumber(row._sum.amount ?? 0)])
   );
 
-  const rows = categories.map((cat) => {
-    const budget = budgets.find((b) => b.categoryId === cat.id) ?? null;
+  // El gasto de una subcategoría también cuenta para el presupuesto de su
+  // categoría padre: si defines un límite a "Comida", debe incluir "Súper".
+  const rows = categories.map((category) => {
+    const ownSpent = spent.get(category.id) ?? 0;
+    const childrenSpent = category.parentId
+      ? 0
+      : categories
+          .filter((other) => other.parentId === category.id)
+          .reduce((sum, child) => sum + (spent.get(child.id) ?? 0), 0);
+
+    const budget = budgets.find((item) => item.categoryId === category.id) ?? null;
+
     return {
-      category: cat,
-      budget: budget ? { ...budget, amount: budget.amount.toString() } : null,
-      spent: spentByCategory.get(cat.id) ?? 0,
+      category: serialize(category),
+      budget: budget ? { id: budget.id, amount: budget.amount.toString() } : null,
+      spent: ownSpent + childrenSpent,
     };
   });
 

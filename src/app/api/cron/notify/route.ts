@@ -13,7 +13,11 @@ export async function GET(req: NextRequest) {
   }
 
   const daysBefore = Number(process.env.NOTIFY_DAYS_BEFORE ?? 3);
-  const payments = await prisma.fixedPayment.findMany({ where: { active: true } });
+  // Solo se avisa de lo que hay que pagar; los ingresos fijos (el sueldo)
+  // existen para el cálculo de "disponible", no para recordatorios.
+  const payments = await prisma.fixedPayment.findMany({
+    where: { active: true, kind: "EXPENSE" },
+  });
 
   const now = new Date();
   const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));

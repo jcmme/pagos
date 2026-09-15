@@ -1,19 +1,10 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import bcrypt from "bcryptjs";
+import { seedCategories } from "../src/lib/seed-categories";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
-
-const DEFAULT_CATEGORIES = [
-  { name: "Comida", color: "#0a84ff" },
-  { name: "Transporte", color: "#30d158" },
-  { name: "Vivienda", color: "#ff9f0a" },
-  { name: "Servicios", color: "#ff453a" },
-  { name: "Ocio", color: "#bf5af2" },
-  { name: "Salud", color: "#64d2ff" },
-  { name: "Otros", color: "#a1a1a6" },
-];
 
 async function main() {
   const email = process.env.ADMIN_EMAIL;
@@ -31,14 +22,8 @@ async function main() {
     console.warn("ADMIN_EMAIL/ADMIN_PASSWORD no definidos, no se creó usuario.");
   }
 
-  for (const category of DEFAULT_CATEGORIES) {
-    await prisma.category.upsert({
-      where: { name: category.name },
-      create: category,
-      update: {},
-    });
-  }
-  console.log("Categorías por defecto listas.");
+  const categories = await seedCategories(prisma);
+  console.log(`Categorías por defecto listas (${categories}).`);
 }
 
 main()

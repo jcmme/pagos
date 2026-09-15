@@ -161,7 +161,7 @@ function DebtCard({ debt }: { debt: SerializedDebt }) {
           <span>{formatCurrency(remaining)} restante</span>
           <span>{formatCurrency(debt.totalAmount)} total</span>
         </div>
-        <ProgressBar value={paid} max={Number(debt.totalAmount)} className="mt-1.5" />
+        <ProgressBar value={paid} max={Number(debt.totalAmount)} className="mt-1.5" semantics="goal" />
       </div>
 
       {settled && (

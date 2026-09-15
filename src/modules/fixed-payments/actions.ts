@@ -15,6 +15,7 @@ function parseForm(formData: FormData) {
   return fixedPaymentSchema.safeParse({
     name: formData.get("name"),
     amount: formData.get("amount"),
+    kind: formData.get("kind") ?? "EXPENSE",
     frequency: formData.get("frequency"),
     dueDay: formData.get("dueDay"),
     dueMonth: formData.get("dueMonth") || undefined,

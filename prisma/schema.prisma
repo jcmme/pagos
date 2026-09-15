@@ -17,34 +17,289 @@ model User {
 
 model Category {
   id        String   @id @default(cuid())
-  name      String   @unique
+  name      String
   color     String   @default("#0a84ff")
   icon      String?
+  parentId  String?
+  parent    Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Restrict)
+  children  Category[] @relation("CategoryTree")
+  // Marca los gastos indispensables (renta, servicios, comida): son la base
+  // del cálculo de meses de fondo de emergencia.
+  essential Boolean  @default(false)
+  archived  Boolean  @default(false)
+  sortOrder Int      @default(0)
   createdAt DateTime @default(now())
 
-  expenses      Expense[]
+  transactions  Transaction[]
   fixedPayments FixedPayment[]
   budgets       Budget[]
+  rules         CategoryRule[]
+
+  @@index([parentId])
 }
 
-enum ExpenseSource {
+enum TxKind {
+  EXPENSE
+  INCOME
+  TRANSFER
+}
+
+enum TxSource {
   MANUAL
   IMPORTED
+  RECURRING
 }
 
-model Expense {
-  id         String        @id @default(cuid())
-  amount     Decimal       @db.Decimal(12, 2)
-  date       DateTime
-  note       String?
-  source     ExpenseSource @default(MANUAL)
-  categoryId String?
-  category   Category?     @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  createdAt  DateTime      @default(now())
-  updatedAt  DateTime      @updatedAt
+model Transaction {
+  id          String   @id @default(cuid())
+  kind        TxKind   @default(EXPENSE)
+  // Siempre positivo: el signo lo determina `kind`.
+  amount      Decimal  @db.Decimal(12, 2)
+  date        DateTime
+  description String?
+  note        String?
+  // Nombre del comercio normalizado ("OXXO", "SPOTIFY"). Es la llave que
+  // comparten las reglas, el dedupe y la detección de suscripciones.
+  merchantKey String?
+  source      TxSource @default(MANUAL)
+  categoryId  String?
+  category    Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  accountId         String?
+  account           Account? @relation("AccountTransactions", fields: [accountId], references: [id], onDelete: SetNull)
+  // Solo se usa cuando kind = TRANSFER: la cuenta destino.
+  transferAccountId String?
+  transferAccount   Account? @relation("AccountTransfers", fields: [transferAccountId], references: [id], onDelete: SetNull)
+
+  excludeFromStats Boolean @default(false)
+  externalId       String? @unique
+  dedupeHash       String?
+  // De qué importación salió. Sin llave foránea a propósito: borrar una
+  // importación no debe borrar movimientos ya aprobados.
+  importId         String?
+
+  tags Tag[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([date])
   @@index([categoryId])
+  @@index([accountId, date])
+  @@index([merchantKey])
+  @@index([dedupeHash])
+}
+
+model Tag {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  color     String   @default("#8e8e93")
+  createdAt DateTime @default(now())
+
+  transactions Transaction[]
+}
+
+enum AccountType {
+  CHECKING
+  SAVINGS
+  CASH
+  CREDIT_CARD
+  INVESTMENT
+  LOAN
+}
+
+model Account {
+  id          String      @id @default(cuid())
+  name        String
+  type        AccountType
+  institution String?
+  last4       String?
+  // El saldo actual se calcula como initialBalance + Σ movimientos firmados.
+  // Nunca se almacena, para que no se desincronice de los movimientos.
+  initialBalance Decimal  @db.Decimal(14, 2) @default(0)
+  creditLimit    Decimal? @db.Decimal(14, 2)
+  includeInNetWorth Boolean @default(true)
+  // Cuenta disponible de inmediato: alimenta "disponible para gastar" y el
+  // fondo de emergencia.
+  liquid      Boolean  @default(true)
+  archived    Boolean  @default(false)
+  color       String   @default("#0a84ff")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  transactions      Transaction[]            @relation("AccountTransactions")
+  incomingTransfers Transaction[]            @relation("AccountTransfers")
+  snapshots         AccountBalanceSnapshot[]
+  goals             SavingsGoal[]
+  imports           StatementImport[]
+}
+
+model AccountBalanceSnapshot {
+  id        String   @id @default(cuid())
+  accountId String
+  account   Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  date      DateTime
+  balance   Decimal  @db.Decimal(14, 2)
+  source    String   @default("COMPUTED")
+  createdAt DateTime @default(now())
+
+  @@unique([accountId, date])
+  @@index([date])
+}
+
+enum ImportStatus {
+  UPLOADED
+  EXTRACTING
+  READY
+  PARTIAL
+  FAILED
+  COMPLETED
+}
+
+model StatementImport {
+  id       String @id @default(cuid())
+  fileName String
+  // sha256 del archivo: impide subir dos veces el mismo estado de cuenta.
+  fileHash String @unique
+  mimeType String
+  parser   String
+
+  accountId String?
+  account   Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+
+  status ImportStatus @default(UPLOADED)
+  error  String?
+
+  periodStart    DateTime?
+  periodEnd      DateTime?
+  openingBalance Decimal?  @db.Decimal(14, 2)
+  closingBalance Decimal?  @db.Decimal(14, 2)
+
+  // Respuesta cruda del extractor: permite reconstruir la bandeja sin volver
+  // a llamar al modelo.
+  rawResponse Json?
+
+  createdAt   DateTime  @default(now())
+  processedAt DateTime?
+
+  rows StagedTransaction[]
+
+  @@index([status])
+}
+
+enum StagedStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  DUPLICATE
+}
+
+model StagedTransaction {
+  id       String          @id @default(cuid())
+  importId String
+  import   StatementImport @relation(fields: [importId], references: [id], onDelete: Cascade)
+
+  rowIndex       Int
+  rawDescription String
+  date           DateTime
+  amount         Decimal  @db.Decimal(12, 2)
+  kind           TxKind   @default(EXPENSE)
+  merchantKey    String?
+
+  suggestedCategoryId String?
+  confidence          Decimal? @db.Decimal(3, 2)
+  matchedRuleId       String?
+
+  status StagedStatus @default(PENDING)
+  // Movimiento existente con el que podría estar duplicado. Sin llave foránea:
+  // es solo una señal para la revisión.
+  duplicateOfId String?
+  // Se llena al aprobar. Es único para que un doble clic no duplique.
+  transactionId String? @unique
+
+  createdAt DateTime @default(now())
+
+  @@index([importId, status])
+}
+
+enum RuleMatch {
+  CONTAINS
+  STARTS_WITH
+  EXACT
+  REGEX
+}
+
+model CategoryRule {
+  id         String    @id @default(cuid())
+  pattern    String
+  matchType  RuleMatch @default(CONTAINS)
+  categoryId String
+  category   Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  priority   Int       @default(0)
+  active     Boolean   @default(true)
+  // true cuando la regla nació de una corrección del usuario en la bandeja.
+  learned    Boolean   @default(false)
+  hitCount   Int       @default(0)
+  lastUsedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@unique([pattern, matchType])
+  @@index([categoryId])
+}
+
+enum SubscriptionStatus {
+  DETECTED
+  CONFIRMED
+  DISMISSED
+}
+
+model Subscription {
+  id             String             @id @default(cuid())
+  merchantKey    String             @unique
+  label          String
+  lastAmount     Decimal            @db.Decimal(12, 2)
+  previousAmount Decimal?           @db.Decimal(12, 2)
+  cadenceDays    Int
+  occurrences    Int
+  lastChargeAt   DateTime
+  status         SubscriptionStatus @default(DETECTED)
+  fixedPaymentId String?            @unique
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+}
+
+model SavingsGoal {
+  id           String    @id @default(cuid())
+  name         String
+  targetAmount Decimal   @db.Decimal(14, 2)
+  targetDate   DateTime?
+  accountId    String?
+  account      Account?  @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  color        String    @default("#30d158")
+  archived     Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  contributions GoalContribution[]
+}
+
+model GoalContribution {
+  id        String      @id @default(cuid())
+  goalId    String
+  goal      SavingsGoal @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  amount    Decimal     @db.Decimal(12, 2)
+  date      DateTime    @default(now())
+  note      String?
+  createdAt DateTime    @default(now())
+
+  @@index([goalId])
+}
+
+model InsightDismissal {
+  key         String   @id
+  dismissedAt DateTime @default(now())
 }
 
 enum PaymentFrequency {
@@ -57,6 +312,9 @@ model FixedPayment {
   id            String           @id @default(cuid())
   name          String
   amount        Decimal          @db.Decimal(12, 2)
+  // EXPENSE para lo que hay que pagar, INCOME para entradas fijas como el
+  // sueldo. El cron de avisos solo notifica los de tipo EXPENSE.
+  kind          TxKind           @default(EXPENSE)
   dueDay        Int
   dueMonth      Int?
   frequency     PaymentFrequency @default(MONTHLY)
