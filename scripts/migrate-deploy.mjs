@@ -1,0 +1,34 @@
+import { spawnSync } from "node:child_process";
+
+// El build corre las migraciones antes de compilar, así que un parpadeo de la
+// base tumbaba el despliegue entero. Con reintentos, una indisponibilidad
+// momentánea deja de costar un deploy.
+//
+// Si tras los reintentos sigue fallando, el build falla a propósito: publicar
+// código que espera un schema que no se aplicó es peor que no publicar.
+const DELAYS_MS = [2000, 5000, 10000];
+
+for (let attempt = 0; attempt <= DELAYS_MS.length; attempt++) {
+  const result = spawnSync("npx", ["prisma", "migrate", "deploy"], {
+    stdio: "inherit",
+    shell: process.platform === "win32",
+  });
+
+  if (result.status === 0) {
+    process.exit(0);
+  }
+
+  if (attempt === DELAYS_MS.length) {
+    console.error(
+      `\nLas migraciones fallaron tras ${DELAYS_MS.length + 1} intentos. Se detiene el build.`
+    );
+    process.exit(1);
+  }
+
+  const delay = DELAYS_MS[attempt];
+  console.warn(
+    `\nLas migraciones fallaron (intento ${attempt + 1} de ${DELAYS_MS.length + 1}). ` +
+      `Reintentando en ${delay / 1000}s…`
+  );
+  await new Promise((resolve) => setTimeout(resolve, delay));
+}
