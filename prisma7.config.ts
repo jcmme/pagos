@@ -10,6 +10,10 @@ export default defineConfig({
     seed: "npx tsx prisma/seed.ts",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    // Las migraciones necesitan una conexión de sesión completa (usan locks
+    // de advisory y DDL), así que no pueden ir por el pooler de transacciones
+    // que usa la app en runtime. DIRECT_URL apunta al session pooler; si no
+    // está definida se usa DATABASE_URL, que es el caso en local.
+    url: process.env["DIRECT_URL"] ?? process.env["DATABASE_URL"],
   },
 });
