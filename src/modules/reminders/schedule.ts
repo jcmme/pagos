@@ -1,22 +1,18 @@
 import { computeNextDueDate, daysUntil } from "@/modules/fixed-payments/next-due-date";
 
-// Cuántos días antes se avisa. Es una lista, no un número: el usuario quiere
-// un recordatorio dos días antes y otro el día previo, no una ventana continua
-// que avise también a tres y a cero.
-const DEFAULT_OFFSETS = [2, 1];
+// Cuántos días antes se avisa, de más lejano a más cercano: un recordatorio
+// dos días antes y otro el día previo. Es una lista y no un número porque no
+// es una ventana continua; con un solo número también avisaría a tres y a
+// cero días, que era justo lo que molestaba.
+//
+// Vive aquí y no en una variable de entorno a propósito. Es una decisión de
+// producto de una app de una sola casa, no configuración por despliegue, y
+// tenerla en el panel de Vercel solo abría la puerta a que un valor viejo
+// dejara los avisos en un día equivocado sin que nada lo señalara.
+export const NOTIFY_OFFSETS = [2, 1] as const;
 
-export function notifyOffsets(raw = process.env.NOTIFY_DAYS_BEFORE): number[] {
-  if (!raw) return DEFAULT_OFFSETS;
-
-  const offsets = raw
-    .split(",")
-    .map((part) => Number(part.trim()))
-    .filter((value) => Number.isInteger(value) && value >= 0 && value <= 30);
-
-  // Una configuración rota no debe dejar la app sin avisos en silencio.
-  if (offsets.length === 0) return DEFAULT_OFFSETS;
-
-  return [...new Set(offsets)].sort((a, b) => b - a);
+export function notifyOffsets(): number[] {
+  return [...NOTIFY_OFFSETS];
 }
 
 // La fecha límite de una tarjeta se comporta igual que un pago fijo mensual,
