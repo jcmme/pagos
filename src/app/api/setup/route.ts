@@ -20,10 +20,12 @@ export async function GET(req: NextRequest) {
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
+  // Quien arranca la instalación es el administrador: es el único que puede
+  // dar de alta a los demás. Al reejecutar el setup no se le quita el rol.
   await prisma.user.upsert({
     where: { email },
-    create: { email, passwordHash },
-    update: { passwordHash },
+    create: { email, passwordHash, role: "ADMIN", active: true },
+    update: { passwordHash, role: "ADMIN", active: true },
   });
 
   const categories = await seedCategories(prisma);

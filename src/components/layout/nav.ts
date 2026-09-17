@@ -11,6 +11,7 @@ import {
   Target,
   Repeat,
   Filter,
+  Settings,
 } from "lucide-react";
 
 // Vive en su propio módulo (sin "use client") porque lo consumen tanto el
@@ -29,6 +30,7 @@ export const NAV_ITEMS = [
   { href: "/suscripciones", label: "Suscripciones", icon: Repeat },
   { href: "/categorias", label: "Categorías", icon: Tags },
   { href: "/reglas", label: "Reglas", icon: Filter },
+  { href: "/ajustes", label: "Ajustes", icon: Settings },
 ];
 
 // Las secciones de uso diario, que son las que caben en la barra inferior.
