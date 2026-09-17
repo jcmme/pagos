@@ -9,6 +9,7 @@ export const fixedPaymentSchema = z
     dueDay: z.coerce.number().int().min(1).max(31),
     dueMonth: z.coerce.number().int().min(1).max(12).optional().nullable(),
     categoryId: z.string().optional().nullable(),
+    accountId: z.string().optional().nullable(),
   })
   .refine((data) => data.frequency !== "WEEKLY" || data.dueDay <= 7, {
     message: "El día de la semana debe estar entre 1 y 7",

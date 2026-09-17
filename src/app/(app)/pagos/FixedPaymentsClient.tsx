@@ -1,12 +1,13 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import type { Category } from "@prisma/client";
+import type { CategoryOption } from "@/components/ui/CategorySelect";
 import { Plus, Pencil, Trash2, Check } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Field, Input, Select } from "@/components/ui/Input";
+import { CategorySelect, categoryLabel } from "@/components/ui/CategorySelect";
 import { Modal } from "@/components/ui/Modal";
 import { formatCurrency } from "@/lib/utils";
 import { FREQUENCY_LABELS, MONTH_NAMES_SHORT } from "@/lib/constants";
@@ -30,8 +31,16 @@ type SerializedPayment = {
   frequency: "MONTHLY" | "WEEKLY" | "YEARLY";
   active: boolean;
   categoryId: string | null;
-  category: Category | null;
+  category: {
+    name: string;
+    color: string;
+    parent: { name: string; parent: { name: string } | null } | null;
+  } | null;
+  accountId: string | null;
+  account: { id: string; name: string } | null;
 };
+
+export type AccountOption = { id: string; name: string };
 
 const initialState: ActionState = { error: null };
 const WEEKDAYS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
@@ -39,12 +48,14 @@ const WEEKDAYS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado
 function PaymentForm({
   action,
   categories,
+  accounts,
   defaults,
   submitLabel,
   onSuccess,
 }: {
   action: (state: ActionState, formData: FormData) => Promise<ActionState>;
-  categories: Category[];
+  categories: CategoryOption[];
+  accounts: AccountOption[];
   defaults?: {
     name: string;
     amount: string;
@@ -53,6 +64,7 @@ function PaymentForm({
     dueMonth: number | null;
     frequency: string;
     categoryId: string;
+    accountId: string;
   };
   submitLabel: string;
   onSuccess: () => void;
@@ -136,11 +148,19 @@ function PaymentForm({
 
       <Field>
         Categoría
-        <Select name="categoryId" defaultValue={defaults?.categoryId ?? "none"}>
-          <option value="none">Sin categoría</option>
-          {categories.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
+        <CategorySelect
+          categories={categories}
+          defaultValue={defaults?.categoryId ?? "none"}
+        />
+      </Field>
+
+      <Field>
+        Cuenta con la que se paga
+        <Select name="accountId" defaultValue={defaults?.accountId ?? "none"}>
+          <option value="none">Sin definir</option>
+          {accounts.map((account) => (
+            <option key={account.id} value={account.id}>
+              {account.name}
             </option>
           ))}
         </Select>
@@ -171,9 +191,11 @@ function urgencyLabel(days: number) {
 export function FixedPaymentsClient({
   payments,
   categories,
+  accounts,
 }: {
   payments: SerializedPayment[];
-  categories: Category[];
+  categories: CategoryOption[];
+  accounts: AccountOption[];
 }) {
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<SerializedPayment | null>(null);
@@ -210,7 +232,8 @@ export function FixedPaymentsClient({
                   </div>
                   <p className="mt-1 text-[12px] text-(--foreground-subtle)">
                     {p.kind === "INCOME" ? "Ingreso · " : ""}
-                    {FREQUENCY_LABELS[p.frequency]} · {p.category?.name ?? "Sin categoría"}
+                    {FREQUENCY_LABELS[p.frequency]} · {categoryLabel(p.category)}
+                    {p.account ? ` · ${p.account.name}` : ""}
                   </p>
                 </div>
                 <p
@@ -271,6 +294,7 @@ export function FixedPaymentsClient({
 
       <Modal open={creating} onClose={() => setCreating(false)} title="Nuevo pago fijo">
         <PaymentForm
+          accounts={accounts}
           action={createFixedPayment}
           categories={categories}
           submitLabel="Crear"
@@ -281,6 +305,7 @@ export function FixedPaymentsClient({
       <Modal open={!!editing} onClose={() => setEditing(null)} title="Editar pago fijo">
         {editing && (
           <PaymentForm
+            accounts={accounts}
             action={updateFixedPayment.bind(null, editing.id)}
             categories={categories}
             defaults={{
@@ -291,6 +316,7 @@ export function FixedPaymentsClient({
               dueMonth: editing.dueMonth,
               frequency: editing.frequency,
               categoryId: editing.categoryId ?? "none",
+              accountId: editing.accountId ?? "none",
             }}
             submitLabel="Guardar cambios"
             onSuccess={() => setEditing(null)}

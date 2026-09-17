@@ -28,7 +28,10 @@ const MONTHS_OF_HISTORY = 6;
 // sale del 90% y todo marca perfecto.
 const MIN_TRANSACTIONS_FOR_SCORE = 10;
 
-export async function getHealthReport(now = new Date()): Promise<HealthReport> {
+export async function getHealthReport(
+  userId: string,
+  now = new Date()
+): Promise<HealthReport> {
   const since = new Date(
     Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - MONTHS_OF_HISTORY, 1)
   );
@@ -37,12 +40,13 @@ export async function getHealthReport(now = new Date()): Promise<HealthReport> {
 
   const [accounts, history, monthTotals, debts, budgets, monthByCategory, essentialCategories] =
     await Promise.all([
-      getAccountsWithBalances(),
+      getAccountsWithBalances(userId),
       // Las transferencias nunca cuentan como gasto ni ingreso: solo mueven
       // dinero entre cuentas propias.
       prisma.transaction.groupBy({
         by: ["kind"],
         where: {
+          userId,
           date: { gte: since, lt: nextMonth },
           excludeFromStats: false,
           kind: { in: ["EXPENSE", "INCOME"] },
@@ -52,19 +56,21 @@ export async function getHealthReport(now = new Date()): Promise<HealthReport> {
       prisma.transaction.groupBy({
         by: ["kind"],
         where: {
+          userId,
           date: { gte: monthStart, lt: nextMonth },
           excludeFromStats: false,
           kind: { in: ["EXPENSE", "INCOME"] },
         },
         _sum: { amount: true },
       }),
-      prisma.debt.findMany({ include: { payments: true } }),
+      prisma.debt.findMany({ where: { userId }, include: { payments: true } }),
       prisma.budget.findMany({
-        where: { month: now.getUTCMonth() + 1, year: now.getUTCFullYear() },
+        where: { userId, month: now.getUTCMonth() + 1, year: now.getUTCFullYear() },
       }),
       prisma.transaction.groupBy({
         by: ["categoryId"],
         where: {
+          userId,
           date: { gte: monthStart, lt: nextMonth },
           kind: "EXPENSE",
           excludeFromStats: false,
@@ -75,7 +81,7 @@ export async function getHealthReport(now = new Date()): Promise<HealthReport> {
     ]);
 
   const transactionCount = await prisma.transaction.count({
-    where: { date: { gte: since, lt: nextMonth }, excludeFromStats: false },
+    where: { userId, date: { gte: since, lt: nextMonth }, excludeFromStats: false },
   });
 
   const sumOf = (rows: typeof history, kind: string) =>

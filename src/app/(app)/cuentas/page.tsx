@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { requireUserId } from "@/lib/session";
 import { toNumber } from "@/lib/utils";
 import { getAccountsWithBalances } from "@/modules/accounts/balance";
 import { AccountsClient } from "./AccountsClient";
@@ -6,9 +7,13 @@ import { AccountsClient } from "./AccountsClient";
 export const dynamic = "force-dynamic";
 
 export default async function CuentasPage() {
+  const userId = await requireUserId();
   const [accounts, debts] = await Promise.all([
-    getAccountsWithBalances(),
-    prisma.debt.findMany({ where: { type: "OWE" }, include: { payments: true } }),
+    getAccountsWithBalances(userId),
+    prisma.debt.findMany({
+      where: { userId, type: "OWE" },
+      include: { payments: true },
+    }),
   ]);
 
   const outstandingDebt = debts.reduce((sum, debt) => {

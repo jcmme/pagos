@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { requireUserId } from "@/lib/session";
 import { currentMonthYear, monthRange } from "@/lib/dates";
 import { Card, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -30,26 +31,28 @@ function urgencyLabel(days: number) {
 }
 
 export default async function DashboardPage() {
+  const userId = await requireUserId();
   const { month, year } = currentMonthYear();
   const { start, end } = monthRange(year, month);
 
   const [payments, expenses, budgets, health, available, insights] = await Promise.all([
     prisma.fixedPayment.findMany({
-      where: { active: true, kind: "EXPENSE" },
+      where: { userId, active: true, kind: "EXPENSE" },
       include: { category: true },
     }),
     prisma.transaction.findMany({
       where: {
+        userId,
         kind: "EXPENSE",
         excludeFromStats: false,
         date: { gte: start, lt: end },
       },
-      include: { category: { include: { parent: true } } },
+      include: { category: { include: { parent: { include: { parent: true } } } } },
     }),
-    prisma.budget.findMany({ where: { month, year } }),
-    getHealthReport(),
-    getAvailableToSpend(),
-    generateInsights(),
+    prisma.budget.findMany({ where: { userId, month, year } }),
+    getHealthReport(userId),
+    getAvailableToSpend(userId),
+    generateInsights(userId),
   ]);
 
   const totalSpent = expenses.reduce((sum, expense) => sum + toNumber(expense.amount), 0);

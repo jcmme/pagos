@@ -12,23 +12,30 @@ export type AccountWithBalance = {
   includeInNetWorth: boolean;
   archived: boolean;
   creditLimit: number | null;
+  cutoffDay: number | null;
+  paymentDueDay: number | null;
   initialBalance: number;
   balance: number;
 };
 
 // El saldo nunca se guarda en la tabla: se deriva de initialBalance más los
 // movimientos. Así no puede desincronizarse si se edita o borra un movimiento.
-export async function getAccountsWithBalances(): Promise<AccountWithBalance[]> {
+export async function getAccountsWithBalances(
+  userId: string
+): Promise<AccountWithBalance[]> {
   const [accounts, byAccount, transfersIn] = await Promise.all([
-    prisma.account.findMany({ orderBy: [{ archived: "asc" }, { name: "asc" }] }),
+    prisma.account.findMany({
+      where: { userId },
+      orderBy: [{ archived: "asc" }, { name: "asc" }],
+    }),
     prisma.transaction.groupBy({
       by: ["accountId", "kind"],
-      where: { accountId: { not: null } },
+      where: { userId, accountId: { not: null } },
       _sum: { amount: true },
     }),
     prisma.transaction.groupBy({
       by: ["transferAccountId"],
-      where: { kind: "TRANSFER", transferAccountId: { not: null } },
+      where: { userId, kind: "TRANSFER", transferAccountId: { not: null } },
       _sum: { amount: true },
     }),
   ]);
@@ -60,6 +67,8 @@ export async function getAccountsWithBalances(): Promise<AccountWithBalance[]> {
     includeInNetWorth: account.includeInNetWorth,
     archived: account.archived,
     creditLimit: account.creditLimit ? toNumber(account.creditLimit) : null,
+    cutoffDay: account.cutoffDay,
+    paymentDueDay: account.paymentDueDay,
     initialBalance: toNumber(account.initialBalance),
     balance: toNumber(account.initialBalance) + (deltas.get(account.id) ?? 0),
   }));

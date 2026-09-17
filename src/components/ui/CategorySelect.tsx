@@ -5,12 +5,20 @@ export type CategoryOption = {
   name: string;
   color: string;
   parentId: string | null;
-  parent: { id: string; name: string } | null;
+  parent: { id: string; name: string; parent?: { name: string } | null } | null;
 };
 
-// Presenta las categorías agrupadas por su padre. Las subcategorías son la
-// opción normal a elegir; las raíz siguen siendo seleccionables para quien no
-// quiera bajar a ese nivel de detalle.
+// Sangría por nivel. Un `<optgroup>` solo agrupa un nivel, y con tres niveles
+// (Loreto › Escuela › Inscripción) hace falta poder ver la jerarquía completa
+// dentro de la lista.
+const INDENT = "    ";
+
+function descendants(categories: CategoryOption[], parentId: string | null) {
+  return categories.filter((category) => category.parentId === parentId);
+}
+
+// Presenta las categorías como árbol aplanado con sangría. Cualquier nivel es
+// seleccionable: quien no quiera bajar al detalle se queda en la raíz.
 export function CategorySelect({
   categories,
   defaultValue,
@@ -24,39 +32,42 @@ export function CategorySelect({
   includeNone?: boolean;
   required?: boolean;
 }) {
-  const roots = categories.filter((category) => !category.parentId);
+  function renderLevel(parentId: string | null, depth: number): React.ReactNode[] {
+    return descendants(categories, parentId).flatMap((category) => [
+      <option key={category.id} value={category.id}>
+        {INDENT.repeat(depth)}
+        {category.name}
+      </option>,
+      ...renderLevel(category.id, depth + 1),
+    ]);
+  }
 
   return (
-    <Select name={name} defaultValue={defaultValue ?? (includeNone ? "none" : undefined)} required={required}>
+    <Select
+      name={name}
+      defaultValue={defaultValue ?? (includeNone ? "none" : undefined)}
+      required={required}
+    >
       {includeNone && <option value="none">Sin categoría</option>}
-      {roots.map((root) => {
-        const children = categories.filter((category) => category.parentId === root.id);
-        if (children.length === 0) {
-          return (
-            <option key={root.id} value={root.id}>
-              {root.name}
-            </option>
-          );
-        }
-        return (
-          <optgroup key={root.id} label={root.name}>
-            <option value={root.id}>{root.name} (general)</option>
-            {children.map((child) => (
-              <option key={child.id} value={child.id}>
-                {child.name}
-              </option>
-            ))}
-          </optgroup>
-        );
-      })}
+      {renderLevel(null, 0)}
     </Select>
   );
 }
 
-export function categoryLabel(category: {
-  name: string;
-  parent: { name: string } | null;
-} | null): string {
+// La ruta completa, para las listas: "Loreto › Escuela › Inscripción".
+export function categoryLabel(
+  category: {
+    name: string;
+    parent?: { name: string; parent?: { name: string } | null } | null;
+  } | null
+): string {
   if (!category) return "Sin categoría";
-  return category.parent ? `${category.parent.name} › ${category.name}` : category.name;
+
+  const path = [category.name];
+  let current = category.parent;
+  while (current) {
+    path.unshift(current.name);
+    current = current.parent ?? null;
+  }
+  return path.join(" › ");
 }

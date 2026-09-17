@@ -13,11 +13,19 @@ function ensureConfigured() {
   configured = true;
 }
 
-export async function sendPushToAll(payload: { title: string; body: string }) {
+// Los avisos van al dueño del pago, no a todos los dispositivos registrados:
+// con dos personas usando la app, un push sin filtrar le manda a una los
+// recordatorios de la otra.
+export async function sendPushToUser(
+  userId: string,
+  payload: { title: string; body: string }
+) {
   ensureConfigured();
   if (!configured) return { skipped: true };
 
-  const subscriptions = await prisma.pushSubscription.findMany();
+  const subscriptions = await prisma.pushSubscription.findMany({ where: { userId } });
+  if (subscriptions.length === 0) return { sent: 0 };
+
   const results = await Promise.allSettled(
     subscriptions.map((sub) =>
       webpush.sendNotification(
@@ -30,9 +38,14 @@ export async function sendPushToAll(payload: { title: string; body: string }) {
     )
   );
 
+  // Una suscripción que responde 404 o 410 es de un navegador que ya la
+  // revocó: guardarla solo hace más lento el siguiente envío.
   const expired = subscriptions.filter((_, i) => {
     const result = results[i];
-    return result.status === "rejected" && [404, 410].includes((result.reason as { statusCode?: number })?.statusCode ?? 0);
+    return (
+      result.status === "rejected" &&
+      [404, 410].includes((result.reason as { statusCode?: number })?.statusCode ?? 0)
+    );
   });
 
   if (expired.length > 0) {

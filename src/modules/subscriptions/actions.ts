@@ -2,9 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { requireUserId } from "@/lib/session";
+import { ACTION_OK, NOT_FOUND, type ActionState } from "@/lib/action-state";
 import { syncSubscriptions } from "./detect";
 
-export type ActionState = { error: string | null };
+export type { ActionState };
 
 function revalidateAll() {
   revalidatePath("/suscripciones");
@@ -13,20 +15,26 @@ function revalidateAll() {
 }
 
 export async function refreshSubscriptions() {
-  await syncSubscriptions();
+  const userId = await requireUserId();
+  await syncSubscriptions(userId);
   revalidateAll();
 }
 
 export async function dismissSubscription(id: string) {
-  await prisma.subscription.update({ where: { id }, data: { status: "DISMISSED" } });
+  const userId = await requireUserId();
+  await prisma.subscription.updateMany({
+    where: { id, userId },
+    data: { status: "DISMISSED" },
+  });
   revalidateAll();
 }
 
 // Convierte la suscripción detectada en un pago fijo, para que entre al
 // cálculo de "disponible para gastar" y a los recordatorios.
 export async function confirmSubscription(id: string): Promise<ActionState> {
-  const subscription = await prisma.subscription.findUnique({ where: { id } });
-  if (!subscription) return { error: "La suscripción ya no existe." };
+  const userId = await requireUserId();
+  const subscription = await prisma.subscription.findFirst({ where: { id, userId } });
+  if (!subscription) return NOT_FOUND;
   if (subscription.fixedPaymentId) return { error: "Ya la habías convertido en pago fijo." };
 
   const frequency =
@@ -38,6 +46,7 @@ export async function confirmSubscription(id: string): Promise<ActionState> {
 
   const created = await prisma.fixedPayment.create({
     data: {
+      userId,
       name: subscription.label,
       amount: subscription.lastAmount,
       kind: "EXPENSE",
@@ -56,5 +65,5 @@ export async function confirmSubscription(id: string): Promise<ActionState> {
   });
 
   revalidateAll();
-  return { error: null };
+  return ACTION_OK;
 }

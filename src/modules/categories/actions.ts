@@ -2,9 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { categorySchema } from "./schema";
+import { ACTION_OK, type ActionState } from "@/lib/action-state";
+import { categorySchema, MAX_CATEGORY_DEPTH } from "./schema";
 
-export type ActionState = { error: string | null };
+export type { ActionState };
 
 function revalidateAll() {
   revalidatePath("/categorias");
@@ -21,19 +22,55 @@ function parseForm(formData: FormData) {
   });
 }
 
-// Solo se permiten dos niveles: una subcategoría no puede tener hijas. Postgres
-// no puede expresar esa profundidad con una restricción simple, así que se
-// valida aquí.
-async function assertParentIsRoot(parentId: string | null): Promise<string | null> {
+// Qué tan hondo está un nodo: 1 para una raíz. Se sube por los padres en vez
+// de usar una consulta recursiva porque como mucho hay tres niveles.
+async function depthOf(categoryId: string): Promise<number> {
+  let depth = 1;
+  let current = await prisma.category.findUnique({
+    where: { id: categoryId },
+    select: { parentId: true },
+  });
+
+  while (current?.parentId) {
+    depth += 1;
+    current = await prisma.category.findUnique({
+      where: { id: current.parentId },
+      select: { parentId: true },
+    });
+  }
+
+  return depth;
+}
+
+// Cuántos niveles cuelgan de un nodo, contándolo a él: 1 si no tiene hijas.
+// Mover una categoría arrastra su subárbol, así que hay que medirlo antes.
+async function heightOf(categoryId: string): Promise<number> {
+  const children = await prisma.category.findMany({
+    where: { parentId: categoryId },
+    select: { id: true },
+  });
+  if (children.length === 0) return 1;
+
+  const heights = await Promise.all(children.map((child) => heightOf(child.id)));
+  return 1 + Math.max(...heights);
+}
+
+const TOO_DEEP = `Solo se permiten ${MAX_CATEGORY_DEPTH} niveles de categorías.`;
+
+async function assertFits(
+  parentId: string | null,
+  subtreeHeight: number
+): Promise<string | null> {
   if (!parentId) return null;
 
   const parent = await prisma.category.findUnique({
     where: { id: parentId },
-    select: { parentId: true },
+    select: { id: true },
   });
-
   if (!parent) return "La categoría padre no existe.";
-  if (parent.parentId) return "Solo se permiten dos niveles de categorías.";
+
+  const parentDepth = await depthOf(parentId);
+  if (parentDepth + subtreeHeight > MAX_CATEGORY_DEPTH) return TOO_DEEP;
   return null;
 }
 
@@ -44,8 +81,8 @@ export async function createCategory(
   const parsed = parseForm(formData);
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
-  const parentError = await assertParentIsRoot(parsed.data.parentId);
-  if (parentError) return { error: parentError };
+  const error = await assertFits(parsed.data.parentId, 1);
+  if (error) return { error };
 
   try {
     await prisma.category.create({ data: parsed.data });
@@ -54,7 +91,7 @@ export async function createCategory(
   }
 
   revalidateAll();
-  return { error: null };
+  return ACTION_OK;
 }
 
 export async function updateCategory(
@@ -65,20 +102,23 @@ export async function updateCategory(
   const parsed = parseForm(formData);
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
-  if (parsed.data.parentId === id) {
+  const { parentId } = parsed.data;
+
+  if (parentId === id) {
     return { error: "Una categoría no puede ser su propia padre." };
   }
 
-  const parentError = await assertParentIsRoot(parsed.data.parentId);
-  if (parentError) return { error: parentError };
-
-  // Si la categoría ya tiene hijas no puede convertirse en subcategoría.
-  if (parsed.data.parentId) {
-    const children = await prisma.category.count({ where: { parentId: id } });
-    if (children > 0) {
-      return { error: "Esta categoría tiene subcategorías, no puede depender de otra." };
+  // Colgar una categoría de una de sus propias descendientes dejaría un ciclo
+  // suelto, fuera del árbol y sin forma de volver a editarlo.
+  if (parentId) {
+    const descendants = await collectDescendants(id);
+    if (descendants.has(parentId)) {
+      return { error: "No puedes mover una categoría dentro de una de sus subcategorías." };
     }
   }
+
+  const error = await assertFits(parentId, await heightOf(id));
+  if (error) return { error };
 
   try {
     await prisma.category.update({ where: { id }, data: parsed.data });
@@ -87,14 +127,32 @@ export async function updateCategory(
   }
 
   revalidateAll();
-  return { error: null };
+  return ACTION_OK;
+}
+
+async function collectDescendants(categoryId: string): Promise<Set<string>> {
+  const found = new Set<string>();
+  let frontier = [categoryId];
+
+  while (frontier.length > 0) {
+    const children = await prisma.category.findMany({
+      where: { parentId: { in: frontier } },
+      select: { id: true },
+    });
+    frontier = children.map((child) => child.id);
+    for (const id of frontier) found.add(id);
+  }
+
+  return found;
 }
 
 export async function deleteCategory(id: string) {
-  // onDelete: Restrict impide borrar una categoría con subcategorías; se
-  // borran primero las hijas para que la acción no falle en silencio.
+  // onDelete: Restrict impide borrar una categoría que tenga descendientes, y
+  // con tres niveles ya no basta con borrar las hijas directas.
+  const descendants = await collectDescendants(id);
+
   await prisma.$transaction([
-    prisma.category.deleteMany({ where: { parentId: id } }),
+    prisma.category.deleteMany({ where: { id: { in: [...descendants] } } }),
     prisma.category.delete({ where: { id } }),
   ]);
   revalidateAll();

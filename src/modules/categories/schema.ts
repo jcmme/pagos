@@ -1,5 +1,13 @@
 import { z } from "zod";
 
+// Las categorías son catálogo común de la instalación, no de cada persona: así
+// los reportes de los dos son comparables y no hay que resembrarlas al dar de
+// alta a alguien.
+//
+// Tres niveles porque el caso real que los pide es "Loreto › Escuela ›
+// Inscripción": la persona, el concepto y el detalle.
+export const MAX_CATEGORY_DEPTH = 3;
+
 export const categorySchema = z.object({
   name: z.string().trim().min(1, "El nombre es obligatorio").max(40),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Color inválido"),

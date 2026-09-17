@@ -14,16 +14,22 @@ function csvCell(value: string | number | null | undefined): string {
 
 export async function GET(req: NextRequest) {
   const session = await auth();
-  if (!session?.user) {
+  const userId = session?.user?.id;
+  if (!userId) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 
   const params = Object.fromEntries(req.nextUrl.searchParams.entries());
-  const where = buildTransactionWhere(parseFilterParams(params));
+  const where = buildTransactionWhere(userId, parseFilterParams(params));
 
   const transactions = await prisma.transaction.findMany({
     where,
-    include: { category: { include: { parent: true } }, account: true, tags: true },
+    include: {
+      // Tres niveles: la etiqueta de la lista muestra la ruta completa.
+      category: { include: { parent: { include: { parent: true } } } },
+      account: true,
+      tags: true,
+    },
     orderBy: { date: "desc" },
   });
 

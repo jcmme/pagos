@@ -18,12 +18,15 @@ export type AvailableToSpend = {
 
 // Cuánto puede gastar hoy sin quedarse corto: el saldo líquido menos lo que ya
 // está comprometido antes de que entre el siguiente ingreso.
-export async function getAvailableToSpend(now = new Date()): Promise<AvailableToSpend> {
+export async function getAvailableToSpend(
+  userId: string,
+  now = new Date()
+): Promise<AvailableToSpend> {
   const [accounts, fixedPayments, goals] = await Promise.all([
-    getAccountsWithBalances(),
-    prisma.fixedPayment.findMany({ where: { active: true } }),
+    getAccountsWithBalances(userId),
+    prisma.fixedPayment.findMany({ where: { userId, active: true } }),
     prisma.savingsGoal.findMany({
-      where: { archived: false },
+      where: { userId, archived: false },
       include: { contributions: true },
     }),
   ]);

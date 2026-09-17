@@ -35,6 +35,20 @@ export const transactionSchema = z
 
 export type TransactionInput = z.infer<typeof transactionSchema>;
 
+// La captura rápida: lo mínimo para no perder un gasto. Sin etiquetas, sin
+// nota y sin transferencias, que son justo lo que hace lento el formulario
+// largo. La fecha viene con default de hoy porque casi siempre es hoy.
+export const quickTransactionSchema = z.object({
+  kind: z.enum(["EXPENSE", "INCOME"]).default("EXPENSE"),
+  amount: z.coerce.number().positive("El monto debe ser mayor a 0"),
+  date: z.string().min(1, "La fecha es obligatoria"),
+  categoryId: optionalId,
+  accountId: optionalId,
+  description: z.string().trim().max(200).optional(),
+});
+
+export type QuickTransactionInput = z.infer<typeof quickTransactionSchema>;
+
 export const transactionFilterSchema = z.object({
   q: z.string().trim().optional(),
   kind: z.enum(TX_KINDS).optional(),

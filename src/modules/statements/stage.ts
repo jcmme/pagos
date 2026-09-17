@@ -41,7 +41,17 @@ export async function stageExtractedRows(
 
   if (prepared.length === 0) return { rows: 0 };
 
-  const duplicates = await findPossibleDuplicates(prepared.map((row) => row.hash));
+  // El dueño sale de la propia importación: así el marcado de duplicados no
+  // depende de que quien llame se acuerde de pasarlo.
+  const owner = await prisma.statementImport.findUniqueOrThrow({
+    where: { id: importId },
+    select: { userId: true },
+  });
+
+  const duplicates = await findPossibleDuplicates(
+    owner.userId,
+    prepared.map((row) => row.hash)
+  );
 
   await prisma.stagedTransaction.createMany({
     data: prepared.map(({ hash, ...row }) => ({

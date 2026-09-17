@@ -2,11 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { requireUserId } from "@/lib/session";
+import { ACTION_OK, NOT_FOUND, type ActionState } from "@/lib/action-state";
 import { dedupeHash } from "./dedupe";
 import { recordRuleHits } from "./apply-rules";
 import { restageImport } from "./stage";
+import { statementImportOwner } from "./owner";
 
-export type ActionState = { error: string | null };
+export type { ActionState };
 
 function revalidateAll(importId?: string) {
   revalidatePath("/importar");
@@ -22,11 +25,14 @@ export async function recategorizeStaged(
   categoryId: string | null,
   createRule: boolean
 ): Promise<ActionState> {
-  const staged = await prisma.stagedTransaction.findUnique({
-    where: { id: stagedId },
+  const userId = await requireUserId();
+  // Las filas de la bandeja no llevan dueño propio: lo heredan de su
+  // importación, así que el filtro va por ahí.
+  const staged = await prisma.stagedTransaction.findFirst({
+    where: { id: stagedId, import: { userId } },
     select: { merchantKey: true, status: true },
   });
-  if (!staged) return { error: "El movimiento ya no existe." };
+  if (!staged) return NOT_FOUND;
   if (staged.status === "APPROVED") return { error: "Ese movimiento ya fue aprobado." };
 
   await prisma.stagedTransaction.update({
@@ -51,21 +57,26 @@ export async function recategorizeStaged(
   }
 
   revalidateAll();
-  return { error: null };
+  return ACTION_OK;
 }
 
 export async function setStagedStatus(stagedId: string, status: "PENDING" | "REJECTED") {
-  await prisma.stagedTransaction.update({ where: { id: stagedId }, data: { status } });
+  const userId = await requireUserId();
+  await prisma.stagedTransaction.updateMany({
+    where: { id: stagedId, import: { userId } },
+    data: { status },
+  });
   revalidateAll();
 }
 
 // Aprueba filas convirtiéndolas en movimientos reales. La unicidad de
 // `transactionId` hace que un doble clic no pueda duplicar nada.
 export async function approveStaged(stagedIds: string[]): Promise<ActionState> {
+  const userId = await requireUserId();
   if (stagedIds.length === 0) return { error: "No hay movimientos seleccionados." };
 
   const rows = await prisma.stagedTransaction.findMany({
-    where: { id: { in: stagedIds }, transactionId: null },
+    where: { id: { in: stagedIds }, transactionId: null, import: { userId } },
     include: { import: { select: { accountId: true } } },
   });
 
@@ -75,6 +86,7 @@ export async function approveStaged(stagedIds: string[]): Promise<ActionState> {
     await prisma.$transaction(async (tx) => {
       const created = await tx.transaction.create({
         data: {
+          userId,
           kind: row.kind,
           amount: row.amount,
           date: row.date,
@@ -114,17 +126,25 @@ export async function approveStaged(stagedIds: string[]): Promise<ActionState> {
   }
 
   revalidateAll(importIds[0]);
-  return { error: null };
+  return ACTION_OK;
 }
 
 export async function deleteImport(importId: string) {
-  await prisma.statementImport.delete({ where: { id: importId } });
+  const userId = await requireUserId();
+  await prisma.statementImport.deleteMany({ where: { id: importId, userId } });
   revalidateAll();
 }
 
 // Vuelve a aplicar las reglas sobre la respuesta guardada. Útil después de
 // crear reglas nuevas: no vuelve a llamar al modelo ni gasta cuota.
 export async function reapplyRules(importId: string): Promise<ActionState> {
+  const userId = await requireUserId();
+  const owned = await prisma.statementImport.findFirst({
+    where: { id: importId, userId },
+    select: { id: true },
+  });
+  if (!owned) return NOT_FOUND;
+
   try {
     await restageImport(importId);
   } catch (error) {
@@ -137,13 +157,14 @@ export async function reapplyRules(importId: string): Promise<ActionState> {
   });
 
   revalidateAll(importId);
-  return { error: null };
+  return ACTION_OK;
 }
 
 export async function setImportAccount(importId: string, accountId: string | null) {
-  await prisma.statementImport.update({
-    where: { id: importId },
-    data: { accountId },
+  const userId = await requireUserId();
+  await prisma.statementImport.updateMany({
+    where: { id: importId, userId },
+    data: { accountId: await statementImportOwner(userId, accountId) },
   });
   revalidateAll(importId);
 }

@@ -15,7 +15,10 @@ export type Insight = {
 // ruido normal de cualquier presupuesto.
 const CHANGE_THRESHOLD = 0.3;
 
-export async function generateInsights(now = new Date()): Promise<Insight[]> {
+export async function generateInsights(
+  userId: string,
+  now = new Date()
+): Promise<Insight[]> {
   const month = now.getUTCMonth() + 1;
   const year = now.getUTCFullYear();
   const current = monthRange(year, month);
@@ -27,6 +30,7 @@ export async function generateInsights(now = new Date()): Promise<Insight[]> {
       prisma.transaction.groupBy({
         by: ["categoryId"],
         where: {
+          userId,
           kind: "EXPENSE",
           excludeFromStats: false,
           date: { gte: current.start, lt: current.end },
@@ -36,6 +40,7 @@ export async function generateInsights(now = new Date()): Promise<Insight[]> {
       prisma.transaction.groupBy({
         by: ["categoryId"],
         where: {
+          userId,
           kind: "EXPENSE",
           excludeFromStats: false,
           date: { gte: previous.start, lt: previous.end },
@@ -43,9 +48,12 @@ export async function generateInsights(now = new Date()): Promise<Insight[]> {
         _sum: { amount: true },
       }),
       prisma.category.findMany({ select: { id: true, name: true } }),
-      prisma.budget.findMany({ where: { month, year }, include: { category: true } }),
-      prisma.subscription.findMany({ where: { status: "DETECTED" } }),
-      prisma.insightDismissal.findMany({ select: { key: true } }),
+      prisma.budget.findMany({
+        where: { userId, month, year },
+        include: { category: true },
+      }),
+      prisma.subscription.findMany({ where: { userId, status: "DETECTED" } }),
+      prisma.insightDismissal.findMany({ where: { userId }, select: { key: true } }),
     ]);
 
   const dismissedKeys = new Set(dismissed.map((row) => row.key));

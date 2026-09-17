@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { requireUserId } from "@/lib/session";
 import { serialize, toNumber } from "@/lib/utils";
 import { buildTransactionWhere, parseFilterParams } from "@/modules/transactions/query";
 import { TransactionsClient } from "./TransactionsClient";
@@ -12,23 +13,31 @@ export default async function MovimientosPage({
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
+  const userId = await requireUserId();
   const params = await searchParams;
   const filter = parseFilterParams(params);
-  const where = buildTransactionWhere(filter);
+  const where = buildTransactionWhere(userId, filter);
 
   const [transactions, categories, accounts, tags, totals] = await Promise.all([
     prisma.transaction.findMany({
       where,
-      include: { category: { include: { parent: true } }, account: true, tags: true },
+      include: {
+        category: { include: { parent: { include: { parent: true } } } },
+        account: true,
+        tags: true,
+      },
       orderBy: { date: "desc" },
       take: PAGE_SIZE,
     }),
     prisma.category.findMany({
       where: { archived: false },
-      include: { parent: true },
+      include: { parent: { include: { parent: true } } },
       orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
     }),
-    prisma.account.findMany({ where: { archived: false }, orderBy: { name: "asc" } }),
+    prisma.account.findMany({
+      where: { userId, archived: false },
+      orderBy: { name: "asc" },
+    }),
     prisma.tag.findMany({ orderBy: { name: "asc" } }),
     prisma.transaction.groupBy({ by: ["kind"], where, _sum: { amount: true } }),
   ]);

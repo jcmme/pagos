@@ -20,17 +20,30 @@ export async function GET(req: NextRequest) {
   // unique de (accountId, date) evite duplicados si el cron corre dos veces.
   const snapshotDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
 
-  const accounts = await getAccountsWithBalances();
+  // El cron corre sin sesión, así que recorre a todas las personas: cada una
+  // tiene sus propias cuentas y sus propias suscripciones.
+  const users = await prisma.user.findMany({
+    where: { active: true },
+    select: { id: true },
+  });
 
-  for (const account of accounts) {
-    await prisma.accountBalanceSnapshot.upsert({
-      where: { accountId_date: { accountId: account.id, date: snapshotDate } },
-      create: { accountId: account.id, date: snapshotDate, balance: account.balance },
-      update: { balance: account.balance },
-    });
+  let snapshots = 0;
+  let subscriptions = 0;
+
+  for (const user of users) {
+    const accounts = await getAccountsWithBalances(user.id);
+
+    for (const account of accounts) {
+      await prisma.accountBalanceSnapshot.upsert({
+        where: { accountId_date: { accountId: account.id, date: snapshotDate } },
+        create: { accountId: account.id, date: snapshotDate, balance: account.balance },
+        update: { balance: account.balance },
+      });
+    }
+
+    snapshots += accounts.length;
+    subscriptions += await syncSubscriptions(user.id, now);
   }
 
-  const subscriptions = await syncSubscriptions(now);
-
-  return NextResponse.json({ snapshots: accounts.length, subscriptions });
+  return NextResponse.json({ users: users.length, snapshots, subscriptions });
 }

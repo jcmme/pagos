@@ -2,13 +2,21 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { requireUserId } from "@/lib/session";
+import { ACTION_OK, NOT_FOUND, type ActionState } from "@/lib/action-state";
 import { normalizeMerchant } from "@/lib/merchant";
 import { slugify } from "@/lib/slug";
-import { transactionSchema } from "./schema";
+import { transactionSchema, quickTransactionSchema } from "./schema";
 
-export type ActionState = { error: string | null };
+export type { ActionState };
 
-const TOUCHED_PATHS = ["/movimientos", "/", "/salud", "/cuentas", "/presupuestos"];
+const TOUCHED_PATHS = [
+  "/movimientos",
+  "/",
+  "/salud",
+  "/cuentas",
+  "/presupuestos",
+];
 
 function revalidateAll() {
   for (const path of TOUCHED_PATHS) revalidatePath(path);
@@ -50,10 +58,23 @@ async function connectTags(names: string[]) {
   return { set: tags.map((tag) => ({ id: tag.id })) };
 }
 
+// Las cuentas y las categorías llegan como id desde el formulario. La
+// categoría es catálogo común, pero la cuenta es de alguien: si no es tuya, se
+// guarda sin cuenta en vez de apuntar a la de otra persona.
+async function ownedAccountId(userId: string, accountId: string | null) {
+  if (!accountId) return null;
+  const account = await prisma.account.findFirst({
+    where: { id: accountId, userId },
+    select: { id: true },
+  });
+  return account?.id ?? null;
+}
+
 export async function createTransaction(
   _prev: ActionState,
   formData: FormData
 ): Promise<ActionState> {
+  const userId = await requireUserId();
   const parsed = parseForm(formData);
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
@@ -62,6 +83,7 @@ export async function createTransaction(
 
   await prisma.transaction.create({
     data: {
+      userId,
       kind: data.kind,
       amount: data.amount,
       date: new Date(data.date),
@@ -69,15 +91,53 @@ export async function createTransaction(
       description: data.description,
       merchantKey: normalizeMerchant(data.description ?? data.note),
       categoryId: data.categoryId,
-      accountId: data.accountId,
-      transferAccountId: data.kind === "TRANSFER" ? data.transferAccountId : null,
+      accountId: await ownedAccountId(userId, data.accountId),
+      transferAccountId:
+        data.kind === "TRANSFER"
+          ? await ownedAccountId(userId, data.transferAccountId)
+          : null,
       excludeFromStats: data.excludeFromStats,
       ...(tags ? { tags: { connect: tags.set } } : {}),
     },
   });
 
   revalidateAll();
-  return { error: null };
+  return ACTION_OK;
+}
+
+// La captura rápida del botón flotante: monto, categoría y poco más. Comparte
+// tabla y validación con el formulario largo, pero no exige lo que ahí sí.
+export async function createQuickTransaction(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const userId = await requireUserId();
+  const parsed = quickTransactionSchema.safeParse({
+    kind: formData.get("kind") ?? "EXPENSE",
+    amount: formData.get("amount"),
+    date: formData.get("date"),
+    categoryId: formData.get("categoryId"),
+    accountId: formData.get("accountId"),
+    description: formData.get("description") || undefined,
+  });
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+
+  const data = parsed.data;
+  await prisma.transaction.create({
+    data: {
+      userId,
+      kind: data.kind,
+      amount: data.amount,
+      date: new Date(data.date),
+      description: data.description,
+      merchantKey: normalizeMerchant(data.description),
+      categoryId: data.categoryId,
+      accountId: await ownedAccountId(userId, data.accountId),
+    },
+  });
+
+  revalidateAll();
+  return ACTION_OK;
 }
 
 export async function updateTransaction(
@@ -85,8 +145,17 @@ export async function updateTransaction(
   _prev: ActionState,
   formData: FormData
 ): Promise<ActionState> {
+  const userId = await requireUserId();
   const parsed = parseForm(formData);
   if (!parsed.success) return { error: parsed.error.issues[0].message };
+
+  // Aquí no sirve updateMany porque hay que tocar la relación de etiquetas,
+  // así que primero se comprueba que el movimiento sea de quien lo edita.
+  const owned = await prisma.transaction.findFirst({
+    where: { id, userId },
+    select: { id: true },
+  });
+  if (!owned) return NOT_FOUND;
 
   const data = parsed.data;
   const tags = await connectTags(data.tags);
@@ -101,18 +170,22 @@ export async function updateTransaction(
       description: data.description,
       merchantKey: normalizeMerchant(data.description ?? data.note),
       categoryId: data.categoryId,
-      accountId: data.accountId,
-      transferAccountId: data.kind === "TRANSFER" ? data.transferAccountId : null,
+      accountId: await ownedAccountId(userId, data.accountId),
+      transferAccountId:
+        data.kind === "TRANSFER"
+          ? await ownedAccountId(userId, data.transferAccountId)
+          : null,
       excludeFromStats: data.excludeFromStats,
       tags: tags ?? { set: [] },
     },
   });
 
   revalidateAll();
-  return { error: null };
+  return ACTION_OK;
 }
 
 export async function deleteTransaction(id: string) {
-  await prisma.transaction.delete({ where: { id } });
+  const userId = await requireUserId();
+  await prisma.transaction.deleteMany({ where: { id, userId } });
   revalidateAll();
 }

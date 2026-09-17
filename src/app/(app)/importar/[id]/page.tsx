@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { requireUserId } from "@/lib/session";
 import { serialize, toNumber } from "@/lib/utils";
 import { ReviewClient } from "./ReviewClient";
 
@@ -11,9 +12,12 @@ export default async function RevisarImportacionPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const userId = await requireUserId();
 
-  const record = await prisma.statementImport.findUnique({
-    where: { id },
+  // findFirst y no findUnique: el filtro por dueño hace que una importación
+  // ajena se comporte igual que una que no existe.
+  const record = await prisma.statementImport.findFirst({
+    where: { id, userId },
     include: {
       account: { select: { id: true, name: true } },
       rows: { orderBy: { rowIndex: "asc" } },
@@ -24,7 +28,7 @@ export default async function RevisarImportacionPage({
 
   const categories = await prisma.category.findMany({
     where: { archived: false },
-    include: { parent: true },
+    include: { parent: { include: { parent: true } } },
     orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
   });
 

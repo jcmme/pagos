@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { requireUserId } from "@/lib/session";
 import { currentMonthYear, monthRange } from "@/lib/dates";
 import { serialize, toNumber } from "@/lib/utils";
 import { MonthNav } from "@/components/layout/MonthNav";
@@ -17,16 +18,18 @@ export default async function PresupuestosPage({
   const year = Number(params.year) || fallback.year;
   const { start, end } = monthRange(year, month);
 
+  const userId = await requireUserId();
   const [categories, budgets, spentByCategory] = await Promise.all([
     prisma.category.findMany({
       where: { archived: false },
-      include: { parent: true },
+      include: { parent: { include: { parent: true } } },
       orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
     }),
-    prisma.budget.findMany({ where: { month, year } }),
+    prisma.budget.findMany({ where: { userId, month, year } }),
     prisma.transaction.groupBy({
       by: ["categoryId"],
       where: {
+        userId,
         kind: "EXPENSE",
         excludeFromStats: false,
         date: { gte: start, lt: end },

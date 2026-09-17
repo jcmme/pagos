@@ -6,13 +6,37 @@ datasource db {
   provider = "postgresql"
 }
 
+enum UserRole {
+  ADMIN
+  MEMBER
+}
+
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
+  name         String?
   passwordHash String
+  // El ADMIN es el único que puede dar de alta a otros. El primero que se
+  // crea lo es; el resto entra como MEMBER.
+  role         UserRole @default(MEMBER)
+  active       Boolean  @default(true)
   createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt @default(now())
 
   pushSubscriptions PushSubscription[]
+
+  // Cada quien lleva sus propias finanzas: las categorías y las etiquetas son
+  // un catálogo común, pero todo lo que tiene dinero es de una sola persona.
+  transactions  Transaction[]
+  accounts      Account[]
+  fixedPayments FixedPayment[]
+  budgets       Budget[]
+  debts         Debt[]
+  goals         SavingsGoal[]
+  imports       StatementImport[]
+  subscriptions Subscription[]
+  dismissals    InsightDismissal[]
+  reminders     ReminderSent[]
 }
 
 model Category {
@@ -52,6 +76,8 @@ enum TxSource {
 
 model Transaction {
   id          String   @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   kind        TxKind   @default(EXPENSE)
   // Siempre positivo: el signo lo determina `kind`.
   amount      Decimal  @db.Decimal(12, 2)
@@ -72,7 +98,7 @@ model Transaction {
   transferAccount   Account? @relation("AccountTransfers", fields: [transferAccountId], references: [id], onDelete: SetNull)
 
   excludeFromStats Boolean @default(false)
-  externalId       String? @unique
+  externalId       String?
   dedupeHash       String?
   // De qué importación salió. Sin llave foránea a propósito: borrar una
   // importación no debe borrar movimientos ya aprobados.
@@ -83,10 +109,13 @@ model Transaction {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([date])
+  // El id externo solo tiene que ser único dentro de las finanzas de cada
+  // quien: dos personas pueden importar el mismo movimiento de un banco.
+  @@unique([userId, externalId])
+  @@index([userId, date])
   @@index([categoryId])
   @@index([accountId, date])
-  @@index([merchantKey])
+  @@index([userId, merchantKey])
   @@index([dedupeHash])
 }
 
@@ -111,6 +140,8 @@ enum AccountType {
 
 model Account {
   id          String      @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   name        String
   type        AccountType
   institution String?
@@ -119,6 +150,10 @@ model Account {
   // Nunca se almacena, para que no se desincronice de los movimientos.
   initialBalance Decimal  @db.Decimal(14, 2) @default(0)
   creditLimit    Decimal? @db.Decimal(14, 2)
+  // Solo para tarjetas de crédito: el día del mes en que cierra el periodo y
+  // el día en que vence el pago. De aquí salen los recordatorios.
+  cutoffDay      Int?
+  paymentDueDay  Int?
   includeInNetWorth Boolean @default(true)
   // Cuenta disponible de inmediato: alimenta "disponible para gastar" y el
   // fondo de emergencia.
@@ -133,6 +168,9 @@ model Account {
   snapshots         AccountBalanceSnapshot[]
   goals             SavingsGoal[]
   imports           StatementImport[]
+  fixedPayments     FixedPayment[]
+
+  @@index([userId])
 }
 
 model AccountBalanceSnapshot {
@@ -159,9 +197,11 @@ enum ImportStatus {
 
 model StatementImport {
   id       String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   fileName String
   // sha256 del archivo: impide subir dos veces el mismo estado de cuenta.
-  fileHash String @unique
+  fileHash String
   mimeType String
   parser   String
 
@@ -185,7 +225,8 @@ model StatementImport {
 
   rows StagedTransaction[]
 
-  @@index([status])
+  @@unique([userId, fileHash])
+  @@index([userId, status])
 }
 
 enum StagedStatus {
@@ -257,7 +298,9 @@ enum SubscriptionStatus {
 
 model Subscription {
   id             String             @id @default(cuid())
-  merchantKey    String             @unique
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  merchantKey    String
   label          String
   lastAmount     Decimal            @db.Decimal(12, 2)
   previousAmount Decimal?           @db.Decimal(12, 2)
@@ -268,10 +311,14 @@ model Subscription {
   fixedPaymentId String?            @unique
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
+
+  @@unique([userId, merchantKey])
 }
 
 model SavingsGoal {
   id           String    @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   name         String
   targetAmount Decimal   @db.Decimal(14, 2)
   targetDate   DateTime?
@@ -283,6 +330,8 @@ model SavingsGoal {
   updatedAt    DateTime  @updatedAt
 
   contributions GoalContribution[]
+
+  @@index([userId])
 }
 
 model GoalContribution {
@@ -298,8 +347,13 @@ model GoalContribution {
 }
 
 model InsightDismissal {
-  key         String   @id
+  id          String   @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  key         String
   dismissedAt DateTime @default(now())
+
+  @@unique([userId, key])
 }
 
 enum PaymentFrequency {
@@ -310,6 +364,8 @@ enum PaymentFrequency {
 
 model FixedPayment {
   id            String           @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   name          String
   amount        Decimal          @db.Decimal(12, 2)
   // EXPENSE para lo que hay que pagar, INCOME para entradas fijas como el
@@ -321,11 +377,14 @@ model FixedPayment {
   active        Boolean          @default(true)
   categoryId    String?
   category      Category?        @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  lastNotifiedAt DateTime?
+  // Con qué cuenta se paga, para saber de dónde va a salir el dinero.
+  accountId     String?
+  account       Account?         @relation(fields: [accountId], references: [id], onDelete: SetNull)
   lastPaidAt    DateTime?
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
 
+  @@index([userId, active])
   @@index([categoryId])
 }
 
@@ -336,6 +395,8 @@ enum DebtType {
 
 model Debt {
   id            String   @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   name          String
   counterparty  String?
   type          DebtType
@@ -347,6 +408,8 @@ model Debt {
   updatedAt     DateTime @updatedAt
 
   payments DebtPayment[]
+
+  @@index([userId])
 }
 
 model DebtPayment {
@@ -363,6 +426,8 @@ model DebtPayment {
 
 model Budget {
   id         String   @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   categoryId String
   category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   amount     Decimal  @db.Decimal(12, 2)
@@ -371,7 +436,7 @@ model Budget {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  @@unique([categoryId, month, year])
+  @@unique([userId, categoryId, month, year])
 }
 
 model PushSubscription {
@@ -384,4 +449,29 @@ model PushSubscription {
   createdAt DateTime @default(now())
 
   @@index([userId])
+}
+
+enum ReminderKind {
+  FIXED_PAYMENT
+  CARD_PAYMENT
+}
+
+// Un aviso enviado. Antes esto era un `lastNotifiedAt` en el pago fijo, que
+// solo distinguía "ya avisé hoy": con recordatorios a dos y a un día de
+// anticipación hacen falta dos eventos distintos. El único compuesto hace que
+// el cron pueda correr de más sin duplicar avisos ni perder ninguno.
+model ReminderSent {
+  id         String       @id @default(cuid())
+  userId     String
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind       ReminderKind
+  // Id del pago fijo o de la tarjeta. Sin llave foránea: si se borra el pago,
+  // el histórico de avisos no tiene por qué estorbar.
+  refId      String
+  dueDate    DateTime     @db.Date
+  daysBefore Int
+  sentAt     DateTime     @default(now())
+
+  @@unique([kind, refId, dueDate, daysBefore])
+  @@index([userId, sentAt])
 }

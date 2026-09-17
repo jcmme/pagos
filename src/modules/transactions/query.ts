@@ -3,8 +3,14 @@ import type { TransactionFilter } from "./schema";
 
 // Compartido por la página de movimientos y la exportación a CSV, para que
 // "exportar" siempre devuelva exactamente lo que el usuario está viendo.
-export function buildTransactionWhere(filter: TransactionFilter): Prisma.TransactionWhereInput {
-  const where: Prisma.TransactionWhereInput = {};
+//
+// El dueño es el primer parámetro y no es opcional a propósito: así una
+// consulta nueva no puede olvidarse de filtrar sin que falle el compilador.
+export function buildTransactionWhere(
+  userId: string,
+  filter: TransactionFilter
+): Prisma.TransactionWhereInput {
+  const where: Prisma.TransactionWhereInput = { userId };
 
   if (filter.kind) where.kind = filter.kind;
   if (filter.categoryId) where.categoryId = filter.categoryId;

@@ -23,11 +23,15 @@ export type DetectedSubscription = {
 // Busca cargos repetidos del mismo comercio con monto parecido y separación
 // regular. Es la base de "tienes una suscripción que no habías registrado" y
 // de la alerta de aumento de precio.
-export async function detectSubscriptions(now = new Date()): Promise<DetectedSubscription[]> {
+export async function detectSubscriptions(
+  userId: string,
+  now = new Date()
+): Promise<DetectedSubscription[]> {
   const since = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - LOOKBACK_MONTHS, 1));
 
   const transactions = await prisma.transaction.findMany({
     where: {
+      userId,
       kind: "EXPENSE",
       date: { gte: since },
       merchantKey: { not: null },
@@ -92,13 +96,14 @@ export async function detectSubscriptions(now = new Date()): Promise<DetectedSub
 
 // Guarda lo detectado conservando el estado que el usuario ya haya fijado
 // (confirmada o descartada), para no volver a sugerir lo mismo cada mes.
-export async function syncSubscriptions(now = new Date()) {
-  const detected = await detectSubscriptions(now);
+export async function syncSubscriptions(userId: string, now = new Date()) {
+  const detected = await detectSubscriptions(userId, now);
 
   for (const item of detected) {
     await prisma.subscription.upsert({
-      where: { merchantKey: item.merchantKey },
+      where: { userId_merchantKey: { userId, merchantKey: item.merchantKey } },
       create: {
+        userId,
         merchantKey: item.merchantKey,
         label: item.label,
         lastAmount: item.lastAmount,

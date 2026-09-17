@@ -17,12 +17,15 @@ export function dedupeHash(input: {
 // Deliberadamente NO es una restricción única: dos cafés iguales el mismo día
 // son legítimos. Solo marca la fila para que el usuario decida en la bandeja.
 export async function findPossibleDuplicates(
+  userId: string,
   hashes: string[]
 ): Promise<Map<string, string>> {
   if (hashes.length === 0) return new Map();
 
+  // Solo cuentan los movimientos propios: el gasto de otra persona no
+  // convierte el tuyo en un duplicado.
   const matches = await prisma.transaction.findMany({
-    where: { dedupeHash: { in: hashes } },
+    where: { userId, dedupeHash: { in: hashes } },
     select: { id: true, dedupeHash: true },
   });
 

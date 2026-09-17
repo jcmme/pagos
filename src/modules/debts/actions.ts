@@ -2,9 +2,17 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { requireUserId } from "@/lib/session";
+import { ACTION_OK, NOT_FOUND, type ActionState } from "@/lib/action-state";
 import { debtSchema, debtPaymentSchema } from "./schema";
 
-export type ActionState = { error: string | null };
+export type { ActionState };
+
+function revalidateAll() {
+  revalidatePath("/deudas");
+  revalidatePath("/");
+  revalidatePath("/salud");
+}
 
 function parseForm(formData: FormData) {
   return debtSchema.safeParse({
@@ -22,19 +30,16 @@ export async function createDebt(
   _prev: ActionState,
   formData: FormData
 ): Promise<ActionState> {
+  const userId = await requireUserId();
   const parsed = parseForm(formData);
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
   await prisma.debt.create({
-    data: {
-      ...parsed.data,
-      startDate: new Date(parsed.data.startDate),
-    },
+    data: { ...parsed.data, userId, startDate: new Date(parsed.data.startDate) },
   });
 
-  revalidatePath("/deudas");
-  revalidatePath("/");
-  return { error: null };
+  revalidateAll();
+  return ACTION_OK;
 }
 
 export async function updateDebt(
@@ -42,26 +47,24 @@ export async function updateDebt(
   _prev: ActionState,
   formData: FormData
 ): Promise<ActionState> {
+  const userId = await requireUserId();
   const parsed = parseForm(formData);
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
-  await prisma.debt.update({
-    where: { id },
-    data: {
-      ...parsed.data,
-      startDate: new Date(parsed.data.startDate),
-    },
+  const { count } = await prisma.debt.updateMany({
+    where: { id, userId },
+    data: { ...parsed.data, startDate: new Date(parsed.data.startDate) },
   });
+  if (count === 0) return NOT_FOUND;
 
-  revalidatePath("/deudas");
-  revalidatePath("/");
-  return { error: null };
+  revalidateAll();
+  return ACTION_OK;
 }
 
 export async function deleteDebt(id: string) {
-  await prisma.debt.delete({ where: { id } });
-  revalidatePath("/deudas");
-  revalidatePath("/");
+  const userId = await requireUserId();
+  await prisma.debt.deleteMany({ where: { id, userId } });
+  revalidateAll();
 }
 
 export async function addDebtPayment(
@@ -69,12 +72,21 @@ export async function addDebtPayment(
   _prev: ActionState,
   formData: FormData
 ): Promise<ActionState> {
+  const userId = await requireUserId();
   const parsed = debtPaymentSchema.safeParse({
     amount: formData.get("amount"),
     date: formData.get("date"),
     note: formData.get("note") || undefined,
   });
   if (!parsed.success) return { error: parsed.error.issues[0].message };
+
+  // El abono no lleva dueño propio: hereda el de su deuda, así que basta con
+  // comprobar que la deuda sea de quien abona.
+  const debt = await prisma.debt.findFirst({
+    where: { id: debtId, userId },
+    select: { id: true },
+  });
+  if (!debt) return NOT_FOUND;
 
   await prisma.debtPayment.create({
     data: {
@@ -85,13 +97,12 @@ export async function addDebtPayment(
     },
   });
 
-  revalidatePath("/deudas");
-  revalidatePath("/");
-  return { error: null };
+  revalidateAll();
+  return ACTION_OK;
 }
 
 export async function deleteDebtPayment(id: string) {
-  await prisma.debtPayment.delete({ where: { id } });
-  revalidatePath("/deudas");
-  revalidatePath("/");
+  const userId = await requireUserId();
+  await prisma.debtPayment.deleteMany({ where: { id, debt: { userId } } });
+  revalidateAll();
 }

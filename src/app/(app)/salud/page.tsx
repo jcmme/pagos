@@ -1,4 +1,5 @@
 import { getHealthReport } from "@/lib/metrics";
+import { requireUserId } from "@/lib/session";
 import { Card, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { ProgressBar } from "@/components/ui/ProgressBar";
@@ -56,7 +57,7 @@ function MetricCard({
 }
 
 export default async function SaludPage() {
-  const report = await getHealthReport();
+  const report = await getHealthReport(await requireUserId());
 
   const percent = (value: number) => `${Math.round(value * 100)}%`;
   const months = (value: number) => `${value.toFixed(1)} meses`;

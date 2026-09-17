@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { statementImportOwner } from "@/modules/statements/owner";
 import { extractFromFile } from "@/modules/statements/extract";
 import { stageExtractedRows } from "@/modules/statements/stage";
 
@@ -26,15 +27,18 @@ const ACCEPTED = [
 
 export async function POST(req: NextRequest) {
   const session = await auth();
-  if (!session?.user) {
+  const userId = session?.user?.id;
+  if (!userId) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 
   const formData = await req.formData();
   const file = formData.get("file");
   const accountIdRaw = formData.get("accountId");
-  const accountId =
-    typeof accountIdRaw === "string" && accountIdRaw !== "none" ? accountIdRaw : null;
+  const accountId = await statementImportOwner(
+    userId,
+    typeof accountIdRaw === "string" && accountIdRaw !== "none" ? accountIdRaw : null
+  );
 
   if (!(file instanceof File)) {
     return NextResponse.json({ error: "No se recibió ningún archivo." }, { status: 400 });
@@ -60,8 +64,10 @@ export async function POST(req: NextRequest) {
   const buffer = Buffer.from(await file.arrayBuffer());
   const fileHash = createHash("sha256").update(buffer).digest("hex");
 
+  // El hash es único por persona: que alguien más haya subido el mismo archivo
+  // no debe impedirte subir el tuyo.
   const existing = await prisma.statementImport.findUnique({
-    where: { fileHash },
+    where: { userId_fileHash: { userId, fileHash } },
     select: { id: true, status: true },
   });
 
@@ -84,6 +90,7 @@ export async function POST(req: NextRequest) {
       })
     : await prisma.statementImport.create({
         data: {
+          userId,
           fileName: file.name,
           fileHash,
           mimeType,
