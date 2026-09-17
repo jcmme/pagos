@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import { MoreHorizontal, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logoutAction } from "@/app/(app)/actions";
+import { CaptureFab } from "@/components/capture/CaptureFab";
+import type { QuickCaptureData } from "@/modules/transactions/quick-data";
 import { NAV_ITEMS, PRIMARY_HREFS } from "./nav";
 
 // En móvil no caben doce secciones: se muestran las de uso diario y el resto
@@ -14,7 +16,13 @@ const MOBILE_ITEMS = [
   { href: "/mas", label: "Más", icon: MoreHorizontal },
 ];
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({
+  children,
+  captureData,
+}: {
+  children: React.ReactNode;
+  captureData: QuickCaptureData;
+}) {
   const pathname = usePathname();
 
   return (
@@ -56,6 +64,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <main className="flex-1 pb-24 md:pb-0">
         <div className="mx-auto w-full max-w-5xl px-4 py-6 md:px-8 md:py-8">{children}</div>
       </main>
+
+      <CaptureFab data={captureData} />
 
       <nav className="glass fixed inset-x-0 bottom-0 z-40 flex justify-around px-2 py-2 md:hidden">
         {MOBILE_ITEMS.map((item) => {
