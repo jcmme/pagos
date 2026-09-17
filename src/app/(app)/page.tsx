@@ -12,6 +12,7 @@ import { getAvailableToSpend } from "@/lib/metrics/available";
 import { generateInsights } from "@/modules/insights/generate";
 import { getMonthlyTotals } from "@/lib/metrics/monthly";
 import { nextMonthlyDate } from "@/modules/reminders/schedule";
+import { urgencyLabel, urgencyTone } from "@/modules/notifications/urgency";
 import { CategoryChart } from "./CategoryChart";
 import { MonthlyTrend } from "./MonthlyTrend";
 import { PaymentCalendar, type CalendarEvent } from "./PaymentCalendar";
@@ -19,20 +20,6 @@ import { InsightsList } from "./InsightsList";
 import { PushManager } from "@/components/PushManager";
 
 export const dynamic = "force-dynamic";
-
-function urgencyTone(days: number): "danger" | "warning" | "accent" | "neutral" {
-  if (days <= 0) return "danger";
-  if (days <= 3) return "warning";
-  if (days <= 7) return "accent";
-  return "neutral";
-}
-
-function urgencyLabel(days: number) {
-  if (days < 0) return "Vencido";
-  if (days === 0) return "Hoy";
-  if (days === 1) return "Mañana";
-  return `${days} días`;
-}
 
 export default async function DashboardPage() {
   const userId = await requireUserId();

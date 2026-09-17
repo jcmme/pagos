@@ -346,6 +346,10 @@ model GoalContribution {
   @@index([goalId])
 }
 
+// Avisos que el usuario ya descartó, identificados por una clave estable. Nació
+// para los insights del dashboard y hoy la comparte toda la campana de avisos
+// (pagos, tarjetas, importaciones), con la clave namespaced por tipo. Se
+// conserva el nombre para no arrastrar una migración de renombrado.
 model InsightDismissal {
   id          String   @id @default(cuid())
   userId String

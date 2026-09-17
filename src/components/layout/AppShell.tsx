@@ -6,7 +6,9 @@ import { MoreHorizontal, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logoutAction } from "@/app/(app)/actions";
 import { CaptureFab } from "@/components/capture/CaptureFab";
+import { TopBar } from "./TopBar";
 import type { QuickCaptureData } from "@/modules/transactions/quick-data";
+import type { NotificationItem } from "@/modules/notifications/feed";
 import { NAV_ITEMS, PRIMARY_HREFS } from "./nav";
 
 // En móvil no caben doce secciones: se muestran las de uso diario y el resto
@@ -19,9 +21,11 @@ const MOBILE_ITEMS = [
 export function AppShell({
   children,
   captureData,
+  notifications,
 }: {
   children: React.ReactNode;
   captureData: QuickCaptureData;
+  notifications: NotificationItem[];
 }) {
   const pathname = usePathname();
 
@@ -61,9 +65,14 @@ export function AppShell({
         </form>
       </aside>
 
-      <main className="flex-1 pb-24 md:pb-0">
-        <div className="mx-auto w-full max-w-5xl px-4 py-6 md:px-8 md:py-8">{children}</div>
-      </main>
+      {/* La barra superior va dentro de esta columna, no como hermana del
+          sidebar, para que en escritorio no se monte encima de él. */}
+      <div className="flex min-w-0 flex-1 flex-col">
+        <TopBar notifications={notifications} />
+        <main className="flex-1 pb-24 md:pb-0">
+          <div className="mx-auto w-full max-w-5xl px-4 py-6 md:px-8 md:py-8">{children}</div>
+        </main>
+      </div>
 
       <CaptureFab data={captureData} />
 
