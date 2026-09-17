@@ -1,6 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { readConnectionString } from "./db-url";
+import { runtimeConnectionString } from "./db-url";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
@@ -8,21 +8,21 @@ const globalForPrisma = globalThis as unknown as {
 
 function createPrismaClient() {
   const adapter = new PrismaPg({
-    connectionString: readConnectionString(process.env.DATABASE_URL),
-    // En Vercel cada petición puede levantar su propia instancia, y cada una
-    // abría hasta 10 conexiones (el default de pg) que además tardaban en
-    // liberarse. Con varias instancias a la vez eso agota el pooler de
-    // Supabase y las páginas empiezan a responder 500.
+    connectionString: runtimeConnectionString(),
+    // La conexión sale por el pooler de transacciones, que multiplexa: estas
+    // no son conexiones reales de Postgres, así que unas pocas por instancia
+    // no saturan la base.
     //
-    // Una instancia atiende una petición a la vez, así que una sola conexión
-    // basta: las consultas en paralelo de una misma página se encolan, que a
-    // esta escala cuesta milisegundos.
-    max: 1,
+    // Y hacen falta: Vercel activa Fluid compute por defecto, o sea que una
+    // misma instancia atiende varias peticiones a la vez. Con una sola
+    // conexión se encolaban unas detrás de otras hasta agotar el timeout.
+    max: 5,
     // Soltar pronto la conexión para que no quede ocupando lugar en el pooler
     // mientras la instancia está inactiva.
     idleTimeoutMillis: 10_000,
-    // Fallar rápido y con un error claro en vez de quedarse colgado.
-    connectionTimeoutMillis: 10_000,
+    // Margen para que una ráfaga de peticiones espere su turno en vez de
+    // fallar, pero sin quedarse colgada si la base de verdad no responde.
+    connectionTimeoutMillis: 20_000,
   });
 
   return new PrismaClient({ adapter });

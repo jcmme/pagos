@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readConnectionString } from "@/lib/db-url";
+import { readConnectionString, runtimeConnectionString } from "@/lib/db-url";
 
 // Diagnóstico de la conexión: en serverless la app debe salir por el pooler de
 // transacciones (puerto 6543), no por el de sesión. Como esa diferencia solo se
@@ -12,8 +12,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 
-  function describe(raw: string | undefined) {
-    const value = readConnectionString(raw);
+  function describe(value: string | undefined) {
     if (!value) return null;
     try {
       const url = new URL(value);
@@ -22,7 +21,6 @@ export async function GET(req: NextRequest) {
         port: url.port || "(default)",
         user: url.username,
         params: url.search || "(ninguno)",
-        hadWhitespace: raw !== value,
       };
     } catch {
       return { error: "no es una URL válida" };
@@ -30,7 +28,10 @@ export async function GET(req: NextRequest) {
   }
 
   return NextResponse.json({
-    DATABASE_URL: describe(process.env.DATABASE_URL),
-    DIRECT_URL: describe(process.env.DIRECT_URL),
+    // La que de verdad usa la app, ya normalizada al pooler de transacciones.
+    runtime: describe(runtimeConnectionString()),
+    // Las variables tal como están en el panel, para ver de dónde salió.
+    DATABASE_URL: describe(readConnectionString(process.env.DATABASE_URL)),
+    DIRECT_URL: describe(readConnectionString(process.env.DIRECT_URL)),
   });
 }
