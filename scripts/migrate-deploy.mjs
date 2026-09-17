@@ -8,11 +8,26 @@ import { spawnSync } from "node:child_process";
 // código que espera un schema que no se aplicó es peor que no publicar.
 const DELAYS_MS = [2000, 5000, 10000];
 
+// Cuando la base acepta la conexión pero no responde, `migrate deploy` se
+// queda esperando sin devolver nunca: un build se quedó 40 minutos en
+// "Building" y bloqueó la cola entera, porque en el plan Hobby solo corre un
+// build a la vez. Con un límite por intento, un cuelgue cuenta como fallo y
+// pasa al reintento en vez de tumbar la cola.
+const ATTEMPT_TIMEOUT_MS = 90_000;
+
 for (let attempt = 0; attempt <= DELAYS_MS.length; attempt++) {
   const result = spawnSync("npx", ["prisma", "migrate", "deploy"], {
     stdio: "inherit",
     shell: process.platform === "win32",
+    timeout: ATTEMPT_TIMEOUT_MS,
+    killSignal: "SIGKILL",
   });
+
+  if (result.error?.code === "ETIMEDOUT") {
+    console.warn(
+      `\nLas migraciones se colgaron más de ${ATTEMPT_TIMEOUT_MS / 1000}s y se cortaron.`
+    );
+  }
 
   if (result.status === 0) {
     process.exit(0);
