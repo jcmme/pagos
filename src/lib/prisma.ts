@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { readConnectionString } from "./db-url";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
@@ -7,7 +8,7 @@ const globalForPrisma = globalThis as unknown as {
 
 function createPrismaClient() {
   const adapter = new PrismaPg({
-    connectionString: process.env.DATABASE_URL,
+    connectionString: readConnectionString(process.env.DATABASE_URL),
     // En Vercel cada petición puede levantar su propia instancia, y cada una
     // abría hasta 10 conexiones (el default de pg) que además tardaban en
     // liberarse. Con varias instancias a la vez eso agota el pooler de

@@ -2,6 +2,7 @@
 // npm install --save-dev prisma dotenv
 import "dotenv/config";
 import { defineConfig } from "prisma/config";
+import { readConnectionString } from "./src/lib/db-url";
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
@@ -14,6 +15,8 @@ export default defineConfig({
     // de advisory y DDL), así que no pueden ir por el pooler de transacciones
     // que usa la app en runtime. DIRECT_URL apunta al session pooler; si no
     // está definida se usa DATABASE_URL, que es el caso en local.
-    url: process.env["DIRECT_URL"] ?? process.env["DATABASE_URL"],
+    url:
+      readConnectionString(process.env["DIRECT_URL"]) ??
+      readConnectionString(process.env["DATABASE_URL"]),
   },
 });
