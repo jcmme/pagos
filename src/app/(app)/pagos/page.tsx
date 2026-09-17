@@ -21,8 +21,11 @@ export default async function PagosPage() {
       include: { parent: { include: { parent: true } } },
       orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
     }),
+    // Solo id y nombre: la fila completa trae Decimal, que no cruza la
+    // frontera al componente cliente.
     prisma.account.findMany({
       where: { userId, archived: false },
+      select: { id: true, name: true },
       orderBy: { name: "asc" },
     }),
   ]);
