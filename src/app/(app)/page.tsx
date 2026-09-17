@@ -10,7 +10,11 @@ import { computeNextDueDate, daysUntil } from "@/modules/fixed-payments/next-due
 import { getHealthReport } from "@/lib/metrics";
 import { getAvailableToSpend } from "@/lib/metrics/available";
 import { generateInsights } from "@/modules/insights/generate";
+import { getMonthlyTotals } from "@/lib/metrics/monthly";
+import { nextMonthlyDate } from "@/modules/reminders/schedule";
 import { CategoryChart } from "./CategoryChart";
+import { MonthlyTrend } from "./MonthlyTrend";
+import { PaymentCalendar, type CalendarEvent } from "./PaymentCalendar";
 import { InsightsList } from "./InsightsList";
 import { PushManager } from "@/components/PushManager";
 
@@ -35,7 +39,8 @@ export default async function DashboardPage() {
   const { month, year } = currentMonthYear();
   const { start, end } = monthRange(year, month);
 
-  const [payments, expenses, budgets, health, available, insights] = await Promise.all([
+  const [payments, expenses, budgets, health, available, insights, monthly, cards] =
+    await Promise.all([
     prisma.fixedPayment.findMany({
       where: { userId, active: true, kind: "EXPENSE" },
       include: { category: true },
@@ -53,6 +58,11 @@ export default async function DashboardPage() {
     getHealthReport(userId),
     getAvailableToSpend(userId),
     generateInsights(userId),
+    getMonthlyTotals(userId),
+    prisma.account.findMany({
+      where: { userId, type: "CREDIT_CARD", archived: false },
+      select: { id: true, name: true, cutoffDay: true, paymentDueDay: true },
+    }),
   ]);
 
   const totalSpent = expenses.reduce((sum, expense) => sum + toNumber(expense.amount), 0);
@@ -64,19 +74,67 @@ export default async function DashboardPage() {
     .slice(0, 5);
 
   // Se agrupa por la categoría raíz para que la gráfica no se fragmente en
-  // veinte rebanadas de subcategorías.
-  const byCategory = new Map<string, { name: string; color: string; value: number }>();
+  // veinte barras de subcategorías. Con tres niveles hay que subir dos veces,
+  // no una.
+  const byCategory = new Map<
+    string,
+    { id: string; name: string; color: string; value: number }
+  >();
   for (const expense of expenses) {
-    const root = expense.category?.parent ?? expense.category;
+    const root =
+      expense.category?.parent?.parent ?? expense.category?.parent ?? expense.category;
     const key = root?.id ?? "none";
     const previous = byCategory.get(key);
     byCategory.set(key, {
+      id: key,
       name: root?.name ?? "Sin categoría",
       color: root?.color ?? "#6e6e73",
       value: (previous?.value ?? 0) + toNumber(expense.amount),
     });
   }
   const chartData = Array.from(byCategory.values()).sort((a, b) => b.value - a.value);
+
+  // El calendario solo muestra lo que cae dentro del mes en curso.
+  const calendarEvents: CalendarEvent[] = [
+    ...payments.flatMap((payment) => {
+      const due = computeNextDueDate(payment);
+      if (due.getUTCMonth() + 1 !== month || due.getUTCFullYear() !== year) return [];
+      return [
+        {
+          day: due.getUTCDate(),
+          label: payment.name,
+          amount: toNumber(payment.amount),
+          kind: "FIXED_PAYMENT" as const,
+        },
+      ];
+    }),
+    ...cards.flatMap((card) => {
+      const events: CalendarEvent[] = [];
+      if (card.paymentDueDay) {
+        const due = nextMonthlyDate(card.paymentDueDay);
+        if (due.getUTCMonth() + 1 === month && due.getUTCFullYear() === year) {
+          events.push({
+            day: due.getUTCDate(),
+            label: `Pago de ${card.name}`,
+            amount: null,
+            kind: "CARD_PAYMENT",
+          });
+        }
+      }
+      if (card.cutoffDay) {
+        const cutoff = nextMonthlyDate(card.cutoffDay);
+        if (cutoff.getUTCMonth() + 1 === month && cutoff.getUTCFullYear() === year) {
+          events.push({
+            day: cutoff.getUTCDate(),
+            label: `Corte de ${card.name}`,
+            amount: null,
+            kind: "CARD_CUTOFF",
+          });
+        }
+      }
+      return events;
+    }),
+  ];
 
   return (
     <div className="flex flex-col gap-5">
@@ -188,12 +246,31 @@ export default async function DashboardPage() {
         </div>
       </Card>
 
-      {chartData.length > 0 && (
-        <Card>
-          <CardTitle className="mb-3">Gasto por categoría</CardTitle>
-          <CategoryChart data={chartData} />
-        </Card>
-      )}
+      <Card>
+        <CardTitle className="mb-3">Qué se paga este mes</CardTitle>
+        <PaymentCalendar
+          year={year}
+          month={month}
+          today={new Date().getUTCDate()}
+          events={calendarEvents}
+        />
+      </Card>
+
+      <Card>
+        <CardTitle className="mb-1">Gasto por categoría</CardTitle>
+        <p className="mb-3 text-[12px] text-(--foreground-subtle)">
+          Este mes. Toca una para ver sus movimientos.
+        </p>
+        <CategoryChart data={chartData} />
+      </Card>
+
+      <Card>
+        <CardTitle className="mb-1">Gasto de los últimos 6 meses</CardTitle>
+        <p className="mb-3 text-[12px] text-(--foreground-subtle)">
+          Incluye el mes en curso, que todavía va a la mitad.
+        </p>
+        <MonthlyTrend data={monthly} />
+      </Card>
 
       <PushManager />
     </div>

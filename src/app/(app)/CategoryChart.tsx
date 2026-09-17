@@ -1,53 +1,64 @@
 "use client";
 
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
+import Link from "next/link";
 import { formatCurrency } from "@/lib/utils";
 
-type Datum = { name: string; color: string; value: number };
+type Datum = { id: string; name: string; color: string; value: number };
 
+// Barras horizontales ordenadas en vez de una dona: los nombres de categoría
+// son largos y lo que se quiere leer es el orden ("¿en qué se me va más?"),
+// que en un anillo hay que adivinar comparando ángulos.
+//
+// Cada barra lleva su nombre y su monto encima, así que la identidad nunca
+// depende solo del color, y cada una entra a los movimientos de su categoría.
 export function CategoryChart({ data }: { data: Datum[] }) {
+  if (data.length === 0) {
+    return (
+      <p className="py-6 text-center text-[13px] text-(--foreground-muted)">
+        Aún no hay gastos este mes.
+      </p>
+    );
+  }
+
+  const total = data.reduce((sum, item) => sum + item.value, 0);
+  const max = Math.max(...data.map((item) => item.value));
+
   return (
-    <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-      <div className="mx-auto h-52 w-52 shrink-0">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
-              data={data}
-              dataKey="value"
-              nameKey="name"
-              innerRadius={55}
-              outerRadius={80}
-              paddingAngle={2}
-              stroke="none"
-            >
-              {data.map((d) => (
-                <Cell key={d.name} fill={d.color} />
-              ))}
-            </Pie>
-            <Tooltip
-              contentStyle={{
-                background: "#2c2c2e",
-                border: "1px solid rgba(255,255,255,0.08)",
-                borderRadius: 12,
-                color: "#f5f5f7",
-                fontSize: 13,
-              }}
-              formatter={(value) => formatCurrency(Number(value))}
-            />
-          </PieChart>
-        </ResponsiveContainer>
-      </div>
-      <div className="flex flex-1 flex-col gap-1.5">
-        {data.map((d) => (
-          <div key={d.name} className="flex items-center justify-between text-[13px]">
-            <div className="flex items-center gap-2">
-              <span className="h-2.5 w-2.5 rounded-full" style={{ background: d.color }} />
-              <span className="text-(--foreground-muted)">{d.name}</span>
+    <div className="flex flex-col gap-2.5">
+      {data.map((item) => {
+        const share = total > 0 ? Math.round((item.value / total) * 100) : 0;
+
+        return (
+          <Link
+            key={item.id}
+            href={`/movimientos?categoryId=${item.id}`}
+            className="group block"
+          >
+            <div className="mb-1 flex items-baseline justify-between gap-3 text-[13px]">
+              <span className="flex min-w-0 items-center gap-2">
+                <span
+                  className="h-2.5 w-2.5 shrink-0 rounded-full"
+                  style={{ background: item.color }}
+                />
+                <span className="truncate text-(--foreground)">{item.name}</span>
+                <span className="shrink-0 text-(--foreground-subtle)">{share}%</span>
+              </span>
+              <span className="shrink-0 tabular-nums text-(--foreground)">
+                {formatCurrency(item.value)}
+              </span>
             </div>
-            <span>{formatCurrency(d.value)}</span>
-          </div>
-        ))}
-      </div>
+            <div className="h-2 w-full overflow-hidden rounded-full bg-(--surface-3)">
+              <div
+                className="h-full rounded-full transition-[width]"
+                style={{
+                  width: `${max > 0 ? (item.value / max) * 100 : 0}%`,
+                  background: item.color,
+                }}
+              />
+            </div>
+          </Link>
+        );
+      })}
     </div>
   );
 }

@@ -2,15 +2,23 @@
 export const LOCALE = "es-MX";
 export const CURRENCY = "MXN";
 
+// Paleta de las gráficas y de los puntos de categoría. No son los acentos de
+// la interfaz (esos siguen siendo los de iOS): los colores de marca son
+// demasiado claros y saturados para distinguirse entre sí en una gráfica.
+//
+// Estos ocho están dentro de la banda de luminosidad para fondo oscuro, tienen
+// croma suficiente para no leerse como gris, y en este orden los adyacentes se
+// distinguen bajo daltonismo protán y deután. Si se cambian, hay que volver a
+// validarlos en vez de elegirlos a ojo.
 export const CATEGORY_COLORS = [
-  "#0a84ff",
-  "#30d158",
-  "#ff9f0a",
-  "#ff453a",
-  "#bf5af2",
-  "#64d2ff",
-  "#ffd60a",
-  "#ff375f",
+  "#d15c56",
+  "#009bbe",
+  "#a38300",
+  "#c65b93",
+  "#4087de",
+  "#409d48",
+  "#a269c9",
+  "#c26f00",
 ];
 
 export const MONTH_NAMES_SHORT = [
