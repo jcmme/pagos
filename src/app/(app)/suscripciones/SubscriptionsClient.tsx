@@ -60,7 +60,7 @@ export function SubscriptionsClient({ subscriptions }: { subscriptions: Subscrip
 
       {error && <p className="mb-3 text-[13px] text-(--danger)">{error}</p>}
 
-      <div className="flex flex-col gap-2">
+      <div className="stagger flex flex-col gap-2">
         {detected.map((item) => {
           const last = Number(item.lastAmount);
           const previous = item.previousAmount ? Number(item.previousAmount) : null;

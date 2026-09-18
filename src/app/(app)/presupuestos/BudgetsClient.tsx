@@ -89,7 +89,7 @@ export function BudgetsClient({ rows, month, year }: { rows: Row[]; month: numbe
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="stagger flex flex-col gap-2">
       {rows.map((row) => (
         <BudgetRow key={row.category.id} row={row} month={month} year={year} />
       ))}

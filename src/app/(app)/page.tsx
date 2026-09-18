@@ -5,6 +5,7 @@ import { currentMonthYear, monthRange } from "@/lib/dates";
 import { Card, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { ProgressBar } from "@/components/ui/ProgressBar";
+import { CountUp } from "@/components/ui/CountUp";
 import { formatCurrency, toNumber } from "@/lib/utils";
 import { computeNextDueDate, daysUntil } from "@/modules/fixed-payments/next-due-date";
 import { getHealthReport } from "@/lib/metrics";
@@ -151,7 +152,7 @@ export default async function DashboardPage() {
                     available.amount < 0 ? "text-(--danger)" : "text-(--success)"
                   }`}
                 >
-                  {formatCurrency(available.amount)}
+                  <CountUp value={available.amount} />
                 </p>
                 <p className="mt-1 text-[13px] text-(--foreground-muted)">
                   {formatCurrency(available.liquid)} en cuentas −{" "}
@@ -186,7 +187,7 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Card>
           <CardTitle>Gasto del mes</CardTitle>
-          <p className="mt-1 text-[26px] font-semibold">{formatCurrency(totalSpent)}</p>
+          <p className="mt-1 text-[26px] font-semibold"><CountUp value={totalSpent} /></p>
           {totalBudget > 0 && (
             <>
               <p className="mt-1 text-[13px] text-(--foreground-muted)">
@@ -204,7 +205,7 @@ export default async function DashboardPage() {
               health.netWorth.total < 0 ? "text-(--danger)" : ""
             }`}
           >
-            {formatCurrency(health.netWorth.total)}
+            <CountUp value={health.netWorth.total} />
           </p>
           <div className="mt-1 flex gap-4 text-[13px] text-(--foreground-muted)">
             <span>Activos {formatCurrency(health.netWorth.assets)}</span>

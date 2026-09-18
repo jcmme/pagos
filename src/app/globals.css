@@ -25,6 +25,14 @@
   --radius-md: 16px;
   --radius-lg: 22px;
   --radius-full: 999px;
+
+  /* Movimiento. Una sola curva para toda la app: arranca rápido y frena
+     suave, que es lo que hace que algo se sienta físico en vez de mecánico.
+     Tres duraciones bastan; más solo produce incoherencia. */
+  --dur-fast: 120ms;
+  --dur: 200ms;
+  --dur-slow: 320ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @theme inline {
@@ -48,6 +56,35 @@
   --radius-lg: var(--radius-lg);
   --radius-full: var(--radius-full);
   --font-sans: var(--font-system);
+
+  /* Tailwind v4 registra animaciones desde aquí: --animate-x genera
+     animate-x. No hay tailwind.config donde ponerlas. */
+  --animate-rise: rise var(--dur) var(--ease-out) both;
+  --animate-fade: fade var(--dur) var(--ease-out) both;
+  --animate-sheet: sheet var(--dur-slow) var(--ease-out) both;
+  --animate-scrim: fade var(--dur) ease-out both;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/* La hoja inferior sube; en escritorio el desplazamiento es tan corto que
+   se lee como un acercamiento. */
+@keyframes sheet {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
 }
 
 html {
@@ -76,6 +113,240 @@ body {
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid var(--border);
+}
+
+/* --- Miniaturas del menú "Más" -------------------------------------------
+   Cada función del menú se explica con una animación de ~1 s que se dispara
+   una sola vez, cuando la fila entra en pantalla. El observador solo pone
+   data-play="true" en el contenedor; todo lo demás es CSS, para no tener un
+   temporizador de JavaScript por cada una de las nueve.
+
+   Las animaciones arrancan en su estado final y solo corren si hay play, así
+   que una miniatura que nunca se ve se queda quieta y legible. */
+[data-play="true"] .demo-bar {
+  animation: demo-bar 1s var(--ease-out) both;
+}
+
+[data-play="true"] .demo-row {
+  animation: demo-row 0.55s var(--ease-out) both;
+}
+
+[data-play="true"] .demo-row-2 {
+  animation-delay: 0.18s;
+}
+
+[data-play="true"] .demo-row-3 {
+  animation-delay: 0.36s;
+}
+
+/* El saldo "sube" cruzando tres cifras apiladas. Se hace con opacidad y no
+   animando content, que Firefox no soporta. En reposo se ve la cifra final. */
+.demo-num {
+  opacity: 0;
+}
+
+.demo-num-c {
+  opacity: 1;
+}
+
+[data-play="true"] .demo-num-a {
+  animation: demo-num-a 1s both;
+}
+
+[data-play="true"] .demo-num-b {
+  animation: demo-num-b 1s both;
+}
+
+[data-play="true"] .demo-num-c {
+  animation: demo-num-c 1s both;
+}
+
+[data-play="true"] .demo-child {
+  animation: demo-child 0.5s var(--ease-out) both;
+}
+
+[data-play="true"] .demo-child-2 {
+  animation-delay: 0.22s;
+}
+
+[data-play="true"] .demo-tag {
+  animation: demo-tag 0.9s var(--ease-out) both;
+}
+
+[data-play="true"] .demo-switch {
+  animation: demo-switch 0.9s var(--ease-out) both;
+}
+
+[data-play="true"] .demo-switch-2 {
+  animation-delay: 0.25s;
+}
+
+/* Una barra que se llena: presupuesto, meta, deuda. El destino lo pone cada
+   miniatura en --to. */
+@keyframes demo-bar {
+  0% {
+    width: 0%;
+  }
+  70%,
+  100% {
+    width: var(--to);
+  }
+}
+
+@keyframes demo-row {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+}
+
+@keyframes demo-num-a {
+  0%,
+  32% {
+    opacity: 1;
+  }
+  33%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes demo-num-b {
+  0%,
+  32% {
+    opacity: 0;
+  }
+  33%,
+  65% {
+    opacity: 1;
+  }
+  66%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes demo-num-c {
+  0%,
+  65% {
+    opacity: 0;
+  }
+  66%,
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes demo-child {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.9);
+  }
+}
+
+/* La etiqueta entra desde la derecha y se posa sobre el renglón. */
+@keyframes demo-tag {
+  0% {
+    opacity: 0;
+    transform: translateX(14px);
+  }
+  55% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  70% {
+    transform: translateX(-2px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes demo-switch {
+  0%,
+  30% {
+    background: var(--surface-3);
+  }
+  60%,
+  100% {
+    background: var(--success);
+  }
+}
+
+@keyframes demo-knob {
+  0%,
+  30% {
+    transform: translateX(0);
+  }
+  60%,
+  100% {
+    transform: translateX(10px);
+  }
+}
+
+[data-play="true"] .demo-knob {
+  animation: demo-knob 0.9s var(--ease-out) both;
+}
+
+[data-play="true"] .demo-knob-2 {
+  animation-delay: 0.25s;
+}
+
+/* Retroalimentación al tocar. Es el movimiento que más hace que algo se
+   sienta vivo y el que menos estorba, porque solo ocurre mientras el dedo
+   está encima. */
+/* Declara también los colores: esta regla vive fuera de las capas de
+   Tailwind, así que su `transition` le gana a `transition-colors` y, si solo
+   nombrara transform, los botones perderían el fundido de color que ya
+   tenían. */
+.pressable {
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    opacity var(--dur-fast) var(--ease-out);
+}
+
+.pressable:active {
+  transform: scale(0.97);
+}
+
+/* Entrada escalonada de una lista, en CSS puro para que funcione también en
+   los componentes de servidor. A partir del décimo hijo todos comparten el
+   mismo retraso: escalonar veinte movimientos se siente lento, no elegante. */
+.stagger > * {
+  animation: rise var(--dur) var(--ease-out) both;
+}
+
+.stagger > *:nth-child(1) { animation-delay: 0ms; }
+.stagger > *:nth-child(2) { animation-delay: 40ms; }
+.stagger > *:nth-child(3) { animation-delay: 80ms; }
+.stagger > *:nth-child(4) { animation-delay: 120ms; }
+.stagger > *:nth-child(5) { animation-delay: 160ms; }
+.stagger > *:nth-child(6) { animation-delay: 200ms; }
+.stagger > *:nth-child(7) { animation-delay: 240ms; }
+.stagger > *:nth-child(8) { animation-delay: 280ms; }
+.stagger > *:nth-child(9) { animation-delay: 320ms; }
+.stagger > *:nth-child(n + 10) { animation-delay: 360ms; }
+
+/* Quien pide menos movimiento en su sistema lo pide por una razón: mareo,
+   migraña o vértigo. No se suaviza, se apaga. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .pressable:active {
+    transform: none;
+  }
 }
 
 * {

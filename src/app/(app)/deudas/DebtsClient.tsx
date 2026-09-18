@@ -247,7 +247,7 @@ export function DebtsClient({ debts }: { debts: SerializedDebt[] }) {
         </Button>
       </div>
 
-      <div className="flex flex-col gap-2">
+      <div className="stagger flex flex-col gap-2">
         {debts.map((d) => (
           <DebtCard key={d.id} debt={d} />
         ))}

@@ -124,7 +124,7 @@ export function RulesClient({
         categoría en la bandeja puedes pedir que la recuerde, y aparece aquí.
       </p>
 
-      <div className="flex flex-col gap-2">
+      <div className="stagger flex flex-col gap-2">
         {rules.map((rule) => (
           <Card key={rule.id} className={`p-4 ${rule.active ? "" : "opacity-50"}`}>
             <div className="flex flex-wrap items-start justify-between gap-3">

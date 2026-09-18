@@ -136,7 +136,7 @@ export function CategoriesClient({ categories }: { categories: Category[] }) {
         </Button>
       </div>
 
-      <div className="flex flex-col gap-3">
+      <div className="stagger flex flex-col gap-3">
         {roots.map((root) => {
           const children = categories.filter((category) => category.parentId === root.id);
 

@@ -62,7 +62,15 @@ export function AppShell({
       </aside>
 
       <main className="flex-1 pb-24 md:pb-0">
-        <div className="mx-auto w-full max-w-5xl px-4 py-6 md:px-8 md:py-8">{children}</div>
+        {/* La llave por ruta hace que cada pantalla entre con un fundido en
+            vez del corte seco. Next ya reemplaza el árbol al navegar, así que
+            no está forzando un desmontaje que no fuera a ocurrir. */}
+        <div
+          key={pathname}
+          className="animate-fade mx-auto w-full max-w-5xl px-4 py-6 md:px-8 md:py-8"
+        >
+          {children}
+        </div>
       </main>
 
       <CaptureFab data={captureData} />
@@ -78,7 +86,7 @@ export function AppShell({
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-col items-center gap-1 rounded-(--radius-md) px-3 py-1.5 text-[11px]",
+                "pressable flex flex-col items-center gap-1 rounded-(--radius-md) px-3 py-1.5 text-[11px]",
                 active ? "text-(--accent)" : "text-(--foreground-subtle)"
               )}
             >

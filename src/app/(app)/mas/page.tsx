@@ -1,43 +1,35 @@
-import Link from "next/link";
-import { ChevronRight, LogOut } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { Card } from "@/components/ui/Card";
-import { NAV_ITEMS, PRIMARY_HREFS } from "@/components/layout/nav";
 import { logoutAction } from "@/app/(app)/actions";
+import { MoreMenu } from "./MoreMenu";
 
 // Solo existe para móvil: la barra inferior muestra las secciones de uso
 // diario y aquí viven las demás.
+//
+// La lista es cliente porque cada fila anima su miniatura al entrar en
+// pantalla; el cierre de sesión se queda aquí, en el servidor, para seguir
+// siendo una server action y no un fetch.
 export default function MasPage() {
-  const rest = NAV_ITEMS.filter((item) => !PRIMARY_HREFS.includes(item.href));
-
   return (
     <div className="md:hidden">
       <h1 className="mb-6 text-[26px] font-semibold">Más</h1>
 
       <div className="flex flex-col gap-2">
-        {rest.map((item) => {
-          const Icon = item.icon;
-          return (
-            <Link key={item.href} href={item.href}>
-              <Card className="flex items-center justify-between p-4">
-                <span className="flex items-center gap-3 text-[15px]">
-                  <Icon size={19} className="text-(--accent)" />
-                  {item.label}
-                </span>
-                <ChevronRight size={17} className="text-(--foreground-subtle)" />
-              </Card>
-            </Link>
-          );
-        })}
+        <MoreMenu />
 
         <form action={logoutAction}>
           <button type="submit" className="w-full text-left">
-            <Card className="flex items-center gap-3 p-4 text-[15px] text-(--danger)">
+            <Card className="pressable flex items-center gap-3 p-4 text-[15px] text-(--danger)">
               <LogOut size={19} />
               Cerrar sesión
             </Card>
           </button>
         </form>
       </div>
+
+      {/* El botón flotante + se posa sobre la esquina inferior derecha; sin
+          este respiro taparía la última fila. */}
+      <div className="h-6" />
     </div>
   );
 }

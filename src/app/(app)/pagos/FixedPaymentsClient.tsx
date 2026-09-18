@@ -215,7 +215,7 @@ export function FixedPaymentsClient({
         </Button>
       </div>
 
-      <div className="flex flex-col gap-2">
+      <div className="stagger flex flex-col gap-2">
         {sorted.map((p) => {
           const next = computeNextDueDate(p);
           const days = daysUntil(next);

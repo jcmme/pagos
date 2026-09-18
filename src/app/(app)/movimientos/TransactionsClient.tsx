@@ -365,7 +365,7 @@ export function TransactionsClient({
         )}
       </Card>
 
-      <div className="flex flex-col gap-2">
+      <div className="stagger flex flex-col gap-2">
         {transactions.map((tx) => (
           <Card key={tx.id} className="flex items-center justify-between p-3.5">
             <div className="flex min-w-0 items-center gap-3">

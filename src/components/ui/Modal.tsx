@@ -29,10 +29,10 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
       <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="animate-scrim absolute inset-0 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
       />
-      <div className="glass relative w-full max-w-md rounded-t-(--radius-lg) sm:rounded-(--radius-lg) p-6 max-h-[90vh] overflow-y-auto">
+      <div className="glass animate-sheet relative w-full max-w-md rounded-t-(--radius-lg) sm:rounded-(--radius-lg) p-6 max-h-[90vh] overflow-y-auto">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-[17px] font-semibold text-(--foreground)">{title}</h2>
           <button

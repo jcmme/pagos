@@ -11,12 +11,16 @@ import {
   YAxis,
 } from "recharts";
 import { formatCurrency } from "@/lib/utils";
+import { useReducedMotion } from "@/lib/use-reduced-motion";
 import type { MonthlyTotal } from "@/lib/metrics/monthly";
 
 // Una sola serie (el gasto del mes), así que no lleva leyenda: el título la
 // nombra. La línea punteada es el promedio del periodo, que es contra lo que
 // uno compara de verdad al mirar el mes en curso.
 export function MonthlyTrend({ data }: { data: MonthlyTotal[] }) {
+  // recharts anima las barras al montar con su propio motor, que no consulta
+  // la preferencia del sistema. Hay que apagárselo a mano.
+  const reducedMotion = useReducedMotion();
   const average =
     data.reduce((sum, month) => sum + month.expenses, 0) /
     Math.max(1, data.length);
@@ -75,6 +79,7 @@ export function MonthlyTrend({ data }: { data: MonthlyTotal[] }) {
               fill="var(--accent)"
               radius={[4, 4, 0, 0]}
               maxBarSize={38}
+              isAnimationActive={!reducedMotion}
             />
           </BarChart>
         </ResponsiveContainer>

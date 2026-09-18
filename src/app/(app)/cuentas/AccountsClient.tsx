@@ -300,7 +300,7 @@ export function AccountsClient({
         </div>
       </Card>
 
-      <div className="flex flex-col gap-2">
+      <div className="stagger flex flex-col gap-2">
         {active.map((account) => (
           <Card key={account.id} className="p-4">
             <div className="flex items-center justify-between">
