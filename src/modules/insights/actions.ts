@@ -1,9 +1,15 @@
 "use server";
 
-import { dismissNotification } from "@/modules/notifications/actions";
+import { revalidatePath } from "next/cache";
+import { prisma } from "@/lib/prisma";
+import { requireUserId } from "@/lib/session";
 
-// Un insight descartado es un aviso descartado: misma tabla y misma clave. Se
-// mantiene el nombre porque es el que usa la lista del dashboard.
 export async function dismissInsight(key: string) {
-  await dismissNotification(key);
+  const userId = await requireUserId();
+  await prisma.insightDismissal.upsert({
+    where: { userId_key: { userId, key } },
+    create: { userId, key },
+    update: {},
+  });
+  revalidatePath("/");
 }
