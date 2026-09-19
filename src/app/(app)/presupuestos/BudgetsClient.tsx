@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/Input";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { formatCurrency } from "@/lib/utils";
 import { upsertBudget, deleteBudget, ActionState } from "@/modules/budgets/actions";
+import { ICON } from "@/lib/icons";
 
 type Row = {
   category: {
@@ -70,7 +71,7 @@ function BudgetRow({ row, month, year }: { row: Row; month: number; year: number
             className="rounded-full p-2 text-(--foreground-subtle) hover:bg-(--surface-2) hover:text-(--danger)"
             aria-label="Eliminar presupuesto"
           >
-            <Trash2 size={15} />
+            <Trash2 size={ICON.sm} />
           </button>
         )}
       </form>

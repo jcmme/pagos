@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useCountUp } from "@/components/ui/CountUp";
 import { formatMoneyParts } from "@/lib/money";
+import { IconBadge } from "@/components/ui/IconBadge";
 import { cn, formatCurrency } from "@/lib/utils";
 
 // Las píldoras las arma el servidor, que es quien tiene los datos; aquí solo
@@ -30,12 +31,12 @@ const PILL_ICONS: Record<HeroPill["icon"], LucideIcon> = {
   payment: CalendarClock,
 };
 
-const TONE_BG: Record<HeroPill["tone"], string> = {
-  accent: "bg-(--accent)",
-  success: "bg-(--success)",
-  warning: "bg-(--warning)",
-  danger: "bg-(--danger)",
-  purple: "bg-(--purple)",
+const TONE_COLORS: Record<HeroPill["tone"], string> = {
+  accent: "var(--accent)",
+  success: "var(--success)",
+  warning: "var(--warning)",
+  danger: "var(--danger)",
+  purple: "var(--purple)",
 };
 
 function greeting(hour: number) {
@@ -148,14 +149,7 @@ export function Hero({
                 href={pill.href}
                 className="pressable flex w-[104px] shrink-0 snap-start flex-col gap-1.5 rounded-(--radius-md) bg-(--surface) p-3"
               >
-                <span
-                  className={cn(
-                    "flex h-7 w-7 items-center justify-center rounded-full",
-                    TONE_BG[pill.tone]
-                  )}
-                >
-                  <Icon size={15} strokeWidth={2.4} className="text-black/75" />
-                </span>
+                <IconBadge icon={Icon} color={TONE_COLORS[pill.tone]} size="sm" />
                 <span className="block truncate text-[10px] uppercase tracking-wide text-(--foreground-subtle)">
                   {pill.label}
                 </span>

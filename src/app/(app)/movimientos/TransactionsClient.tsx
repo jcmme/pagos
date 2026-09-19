@@ -19,6 +19,7 @@ import {
   type ActionState,
 } from "@/modules/transactions/actions";
 import type { TransactionFilter } from "@/modules/transactions/schema";
+import { ICON } from "@/lib/icons";
 
 type Tx = {
   id: string;
@@ -306,11 +307,11 @@ export function TransactionsClient({
         <div className="flex gap-2">
           <Link href="/importar">
             <Button variant="secondary" className="gap-1.5">
-              <Upload size={16} /> Importar
+              <Upload size={ICON.md} /> Importar
             </Button>
           </Link>
           <Button onClick={() => setCreating(true)} className="gap-1.5">
-            <Plus size={17} /> Nuevo
+            <Plus size={ICON.md} /> Nuevo
           </Button>
         </div>
       </div>
@@ -343,11 +344,11 @@ export function TransactionsClient({
               onClick={() => setShowFilters((value) => !value)}
               className="gap-1.5"
             >
-              <SlidersHorizontal size={16} /> Filtros
+              <SlidersHorizontal size={ICON.md} /> Filtros
             </Button>
             <a href={exportHref}>
               <Button variant="secondary" className="gap-1.5">
-                <Download size={16} /> CSV
+                <Download size={ICON.md} /> CSV
               </Button>
             </a>
           </div>
@@ -406,14 +407,14 @@ export function TransactionsClient({
                 className="rounded-full p-1.5 text-(--foreground-subtle) hover:bg-(--surface-2) hover:text-(--foreground)"
                 aria-label="Editar"
               >
-                <Pencil size={14} />
+                <Pencil size={ICON.sm} />
               </button>
               <button
                 onClick={() => deleteTransaction(tx.id)}
                 className="rounded-full p-1.5 text-(--foreground-subtle) hover:bg-(--surface-2) hover:text-(--danger)"
                 aria-label="Eliminar"
               >
-                <Trash2 size={14} />
+                <Trash2 size={ICON.sm} />
               </button>
             </div>
           </Card>

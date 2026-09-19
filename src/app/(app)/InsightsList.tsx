@@ -6,6 +6,7 @@ import { X, TrendingUp, TrendingDown, AlertTriangle, Info } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { dismissInsight } from "@/modules/insights/actions";
 import type { Insight } from "@/modules/insights/generate";
+import { ICON } from "@/lib/icons";
 
 const TONE_STYLES: Record<Insight["tone"], { color: string; Icon: typeof Info }> = {
   info: { color: "text-(--accent)", Icon: Info },
@@ -25,7 +26,7 @@ export function InsightsList({ insights }: { insights: Insight[] }) {
         const { color, Icon } = TONE_STYLES[insight.tone];
         const body = (
           <div className="flex items-start gap-3">
-            <Icon size={17} className={`mt-0.5 shrink-0 ${color}`} />
+            <Icon size={ICON.md} className={`mt-0.5 shrink-0 ${color}`} />
             <div className="min-w-0 flex-1">
               <p className="text-[14px] font-medium">{insight.title}</p>
               <p className="mt-0.5 text-[13px] text-(--foreground-muted)">{insight.detail}</p>
@@ -49,7 +50,7 @@ export function InsightsList({ insights }: { insights: Insight[] }) {
               className="shrink-0 rounded-full p-1 text-(--foreground-subtle) hover:bg-(--surface-2) hover:text-(--foreground)"
               aria-label="Descartar"
             >
-              <X size={14} />
+              <X size={ICON.sm} />
             </button>
           </Card>
         );

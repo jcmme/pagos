@@ -9,6 +9,7 @@ import { Field, Input, Select } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { CategorySelect, categoryLabel, type CategoryOption } from "@/components/ui/CategorySelect";
 import { RULE_MATCH_LABELS } from "@/lib/constants";
+import { ICON } from "@/lib/icons";
 import {
   createRule,
   updateRule,
@@ -115,7 +116,7 @@ export function RulesClient({
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-[26px] font-semibold">Reglas</h1>
         <Button onClick={() => setCreating(true)} className="gap-1.5">
-          <Plus size={17} /> Nueva regla
+          <Plus size={ICON.md} /> Nueva regla
         </Button>
       </div>
 
@@ -144,7 +145,7 @@ export function RulesClient({
               <div className="flex shrink-0 items-center gap-2">
                 {rule.learned && (
                   <Badge tone="accent" className="gap-1">
-                    <Sparkles size={11} /> Aprendida
+                    <Sparkles size={ICON.sm} /> Aprendida
                   </Badge>
                 )}
                 <button
@@ -158,14 +159,14 @@ export function RulesClient({
                   className="rounded-full p-1.5 text-(--foreground-subtle) hover:bg-(--surface-2) hover:text-(--foreground)"
                   aria-label="Editar"
                 >
-                  <Pencil size={14} />
+                  <Pencil size={ICON.sm} />
                 </button>
                 <button
                   onClick={() => deleteRule(rule.id)}
                   className="rounded-full p-1.5 text-(--foreground-subtle) hover:bg-(--surface-2) hover:text-(--danger)"
                   aria-label="Eliminar"
                 >
-                  <Trash2 size={14} />
+                  <Trash2 size={ICON.sm} />
                 </button>
               </div>
             </div>

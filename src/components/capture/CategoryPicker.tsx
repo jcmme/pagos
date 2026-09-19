@@ -4,6 +4,7 @@ import { ChevronRight, CornerUpLeft } from "lucide-react";
 import { CategoryGlyph } from "@/components/ui/CategoryGlyph";
 import { cn, formatCurrency } from "@/lib/utils";
 import type { QuickCategory, BudgetStatus } from "@/modules/transactions/quick-data";
+import { ICON } from "@/lib/icons";
 
 // Elegir categoría por mosaicos en vez de por lista desplegable: se ve el color
 // de cada una, se toca con el pulgar y bajar de nivel es un gesto, no abrir un
@@ -36,14 +37,14 @@ export function CategoryPicker({
           <button
             type="button"
             onClick={() => onNavigate(path.slice(0, -1))}
-            className="flex h-7 w-7 items-center justify-center rounded-full bg-(--surface-3) text-(--foreground)"
+            className="pressable flex h-7 w-7 items-center justify-center rounded-full bg-(--surface-3) text-(--foreground)"
             aria-label="Volver un nivel"
           >
-            <CornerUpLeft size={14} />
+            <CornerUpLeft size={ICON.sm} />
           </button>
           {path.map((step, index) => (
             <span key={step.id} className="flex items-center gap-1.5">
-              {index > 0 && <ChevronRight size={12} className="text-(--foreground-subtle)" />}
+              {index > 0 && <ChevronRight size={ICON.sm} className="text-(--foreground-subtle)" />}
               <button
                 type="button"
                 onClick={() => onNavigate(path.slice(0, index + 1))}

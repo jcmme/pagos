@@ -3,6 +3,7 @@
 import { Delete } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { appendKey } from "@/modules/transactions/expression";
+import { ICON } from "@/lib/icons";
 
 // La retícula de una calculadora de toda la vida: dígitos a la izquierda,
 // operadores en la última columna. Las reglas de escritura viven en
@@ -59,7 +60,7 @@ export function AmountPad({
             )}
             aria-label={NAMES[key] ?? key}
           >
-            {key === "back" ? <Delete size={20} /> : (LABELS[key] ?? key)}
+            {key === "back" ? <Delete size={ICON.lg} /> : (LABELS[key] ?? key)}
           </button>
         );
       })}

@@ -10,6 +10,7 @@ import { Field, Select } from "@/components/ui/Input";
 import { formatDate } from "@/lib/utils";
 import { IMPORT_STATUS_LABELS } from "@/lib/constants";
 import { deleteImport } from "@/modules/statements/actions";
+import { ICON } from "@/lib/icons";
 
 type ImportRow = {
   id: string;
@@ -125,7 +126,7 @@ export function ImportClient({
 
           {error && (
             <p className="flex items-start gap-2 text-[13px] text-(--danger)">
-              <AlertCircle size={15} className="mt-0.5 shrink-0" />
+              <AlertCircle size={ICON.sm} className="mt-0.5 shrink-0" />
               {error}
             </p>
           )}
@@ -138,7 +139,7 @@ export function ImportClient({
           return (
             <Card key={item.id} className="flex items-center justify-between p-4">
               <Link href={`/importar/${item.id}`} className="flex min-w-0 flex-1 items-center gap-3">
-                <FileText size={18} className="shrink-0 text-(--foreground-subtle)" />
+                <FileText size={ICON.md} className="shrink-0 text-(--foreground-subtle)" />
                 <div className="min-w-0">
                   <p className="truncate text-[14px]">{item.fileName}</p>
                   <p className="text-[12px] text-(--foreground-subtle)">
@@ -161,9 +162,9 @@ export function ImportClient({
                   className="rounded-full p-1.5 text-(--foreground-subtle) hover:bg-(--surface-2) hover:text-(--danger)"
                   aria-label="Eliminar importación"
                 >
-                  <Trash2 size={14} />
+                  <Trash2 size={ICON.sm} />
                 </button>
-                <ChevronRight size={16} className="text-(--foreground-subtle)" />
+                <ChevronRight size={ICON.md} className="text-(--foreground-subtle)" />
               </div>
             </Card>
           );

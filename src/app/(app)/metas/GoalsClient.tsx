@@ -10,6 +10,7 @@ import { Field, Input, Select } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { formatCurrency, formatDate, cn } from "@/lib/utils";
 import { CATEGORY_COLORS } from "@/lib/constants";
+import { ICON } from "@/lib/icons";
 import {
   createGoal,
   updateGoal,
@@ -164,7 +165,7 @@ function GoalCard({
           </div>
         </div>
         <ChevronDown
-          size={18}
+          size={ICON.md}
           className={cn("shrink-0 text-(--foreground-subtle) transition-transform", open && "rotate-180")}
         />
       </button>
@@ -208,7 +209,7 @@ function GoalCard({
                       className="text-(--foreground-subtle) hover:text-(--danger)"
                       aria-label="Eliminar abono"
                     >
-                      <Trash2 size={13} />
+                      <Trash2 size={ICON.sm} />
                     </button>
                   </div>
                 </div>
@@ -221,13 +222,13 @@ function GoalCard({
               onClick={() => setEditing(true)}
               className="flex items-center gap-1 text-[13px] text-(--foreground-muted) hover:text-(--foreground)"
             >
-              <Pencil size={13} /> Editar
+              <Pencil size={ICON.sm} /> Editar
             </button>
             <button
               onClick={() => deleteGoal(goal.id)}
               className="flex items-center gap-1 text-[13px] text-(--foreground-muted) hover:text-(--danger)"
             >
-              <Trash2 size={13} /> Eliminar
+              <Trash2 size={ICON.sm} /> Eliminar
             </button>
           </div>
         </div>
@@ -262,7 +263,7 @@ export function GoalsClient({
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-[26px] font-semibold">Metas de ahorro</h1>
         <Button onClick={() => setCreating(true)} className="gap-1.5">
-          <Plus size={17} /> Nueva meta
+          <Plus size={ICON.md} /> Nueva meta
         </Button>
       </div>
 

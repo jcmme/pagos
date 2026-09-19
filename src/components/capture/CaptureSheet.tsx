@@ -30,6 +30,7 @@ import type {
 } from "@/modules/transactions/quick-data";
 import { AmountPad } from "./AmountPad";
 import { CategoryPicker } from "./CategoryPicker";
+import { ICON } from "@/lib/icons";
 
 const initialState: ActionState = { error: null };
 
@@ -125,7 +126,7 @@ export function CaptureSheet({
                     : "bg-(--success)/15 text-(--success)"
                 )}
               >
-                {kind === "EXPENSE" ? <ArrowUp size={14} /> : <ArrowDown size={14} />}
+                {kind === "EXPENSE" ? <ArrowUp size={ICON.sm} /> : <ArrowDown size={ICON.sm} />}
                 {kind === "EXPENSE" ? "Gasto" : "Ingreso"}
               </button>
 
@@ -145,7 +146,7 @@ export function CaptureSheet({
                         : "bg-(--surface-2) text-(--foreground-muted)"
                     )}
                   >
-                    <Icon size={14} />
+                    <Icon size={ICON.sm} />
                     {chip.label}
                   </button>
                 );
@@ -190,7 +191,7 @@ export function CaptureSheet({
             >
               <span className="flex items-center justify-center gap-1.5">
                 Continuar
-                <ArrowRight size={16} />
+                <ArrowRight size={ICON.md} />
               </span>
             </Button>
           </>
@@ -208,7 +209,7 @@ export function CaptureSheet({
               </span>
               <span className="flex items-center gap-1.5 text-[12px] text-(--foreground-subtle)">
                 {hasOperation(expression) && formatExpression(expression)}
-                <Pencil size={13} />
+                <Pencil size={ICON.sm} />
               </span>
             </button>
 
@@ -310,7 +311,7 @@ export function CaptureSheet({
               className="flex items-center gap-1 self-start text-[13px] text-(--foreground-muted)"
             >
               <ChevronDown
-                size={14}
+                size={ICON.sm}
                 className={cn("transition-transform", showDetails && "rotate-180")}
               />
               Más detalles

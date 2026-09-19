@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Field, Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
+import { ICON } from "@/lib/icons";
 import {
   changePassword,
   createUser,
@@ -125,7 +126,7 @@ export function SettingsClient({
         <p className="text-[13px] text-(--foreground-muted)">{me.email}</p>
         {me.role === "ADMIN" && (
           <span className="mt-2 inline-flex items-center gap-1.5 text-[12px] text-(--foreground-subtle)">
-            <ShieldCheck size={13} /> Administrador
+            <ShieldCheck size={ICON.sm} /> Administrador
           </span>
         )}
       </Card>
@@ -140,7 +141,7 @@ export function SettingsClient({
           <div className="mb-3 flex items-center justify-between">
             <CardTitle>Usuarios</CardTitle>
             <Button variant="secondary" onClick={() => setCreating(true)}>
-              <UserPlus size={16} /> Nuevo
+              <UserPlus size={ICON.md} /> Nuevo
             </Button>
           </div>
 

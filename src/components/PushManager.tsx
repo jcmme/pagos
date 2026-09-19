@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Bell, BellOff } from "lucide-react";
 import { Card, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { ICON } from "@/lib/icons";
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -87,7 +88,7 @@ export function PushManager() {
   return (
     <Card className="flex items-center justify-between">
       <div className="flex items-center gap-3">
-        {subscribed ? <Bell size={18} className="text-(--accent)" /> : <BellOff size={18} className="text-(--foreground-subtle)" />}
+        {subscribed ? <Bell size={ICON.md} className="text-(--accent)" /> : <BellOff size={ICON.md} className="text-(--foreground-subtle)" />}
         <div>
           <CardTitle>Notificaciones push</CardTitle>
           <p className="text-[13px] text-(--foreground-muted)">

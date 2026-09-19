@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { CategorySelect, type CategoryOption } from "@/components/ui/CategorySelect";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { ICON } from "@/lib/icons";
 import {
   approveStaged,
   recategorizeStaged,
@@ -84,7 +85,7 @@ export function ReviewClient({
         href="/importar"
         className="mb-4 inline-flex items-center gap-1 text-[13px] text-(--foreground-muted) hover:text-(--foreground)"
       >
-        <ChevronLeft size={15} /> Importaciones
+        <ChevronLeft size={ICON.sm} /> Importaciones
       </Link>
 
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
@@ -101,7 +102,7 @@ export function ReviewClient({
           onClick={() => run(() => reapplyRules(record.id))}
           className="gap-1.5"
         >
-          <RefreshCw size={15} /> Reaplicar reglas
+          <RefreshCw size={ICON.sm} /> Reaplicar reglas
         </Button>
       </div>
 
@@ -114,7 +115,7 @@ export function ReviewClient({
       {reconciliation && Math.abs(reconciliation.expected - reconciliation.actual) > 0.5 && (
         <Card className="mb-4">
           <div className="flex items-start gap-2">
-            <AlertTriangle size={16} className="mt-0.5 shrink-0 text-(--warning)" />
+            <AlertTriangle size={ICON.md} className="mt-0.5 shrink-0 text-(--warning)" />
             <div>
               <CardTitle>Los saldos no cuadran</CardTitle>
               <p className="mt-1 text-[13px] text-(--foreground-muted)">
@@ -148,7 +149,7 @@ export function ReviewClient({
               onClick={() => run(() => approveStaged([...selected]))}
               className="gap-1.5"
             >
-              <Check size={16} /> Aprobar {selected.size > 0 ? `(${selected.size})` : ""}
+              <Check size={ICON.md} /> Aprobar {selected.size > 0 ? `(${selected.size})` : ""}
             </Button>
           </div>
         </Card>
@@ -188,7 +189,7 @@ export function ReviewClient({
 
                 {row.status === "DUPLICATE" && (
                   <Badge tone="warning" className="mt-2 gap-1">
-                    <Copy size={11} /> Puede estar duplicado
+                    <Copy size={ICON.sm} /> Puede estar duplicado
                   </Badge>
                 )}
 
@@ -238,7 +239,7 @@ export function ReviewClient({
                     className="rounded-full p-2 text-(--foreground-subtle) hover:bg-(--surface-2) hover:text-(--danger)"
                     aria-label="Descartar"
                   >
-                    <X size={15} />
+                    <X size={ICON.sm} />
                   </button>
                 </div>
               </div>

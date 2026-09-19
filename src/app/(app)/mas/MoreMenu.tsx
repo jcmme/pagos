@@ -6,6 +6,7 @@ import { ChevronRight } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { NAV_ITEMS, PRIMARY_HREFS } from "@/components/layout/nav";
 import { DEMOS } from "./demos";
+import { ICON } from "@/lib/icons";
 
 const REST = NAV_ITEMS.filter((item) => !PRIMARY_HREFS.includes(item.href));
 
@@ -46,7 +47,7 @@ export function MoreMenu() {
         return (
           <Link key={item.href} href={item.href} data-demo data-play="false">
             <Card className="pressable flex items-center gap-3 p-4">
-              <Icon size={19} className="shrink-0 text-(--accent)" />
+              <Icon size={ICON.md} className="shrink-0 text-(--accent)" />
 
               <span className="min-w-0 flex-1">
                 <span className="block text-[15px]">{item.label}</span>
@@ -59,7 +60,7 @@ export function MoreMenu() {
 
               {entry?.demo}
 
-              <ChevronRight size={17} className="shrink-0 text-(--foreground-subtle)" />
+              <ChevronRight size={ICON.md} className="shrink-0 text-(--foreground-subtle)" />
             </Card>
           </Link>
         );

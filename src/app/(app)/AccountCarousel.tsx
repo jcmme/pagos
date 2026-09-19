@@ -16,6 +16,7 @@ import { formatMoneyParts } from "@/lib/money";
 import { cardStatus, daysLabel } from "@/modules/accounts/card-status";
 import { ACCOUNT_TYPE_LABELS } from "@/lib/constants";
 import type { AccountWithBalance } from "@/modules/accounts/balance";
+import { ICON } from "@/lib/icons";
 
 const TYPE_ICONS: Record<string, LucideIcon> = {
   CHECKING: Landmark,
@@ -119,7 +120,7 @@ export function AccountCarousel({ accounts }: { accounts: AccountWithBalance[] }
                     {account.last4 ? ` ····${account.last4}` : ""}
                   </p>
                 </div>
-                <Icon size={18} style={{ color: account.color }} className="shrink-0" />
+                <Icon size={ICON.md} style={{ color: account.color }} className="shrink-0" />
               </div>
 
               <div>

@@ -19,6 +19,7 @@ import {
   type ActionState,
 } from "@/modules/accounts/actions";
 import type { AccountWithBalance } from "@/modules/accounts/balance";
+import { ICON } from "@/lib/icons";
 
 const initialState: ActionState = { error: null };
 
@@ -260,7 +261,7 @@ export function AccountsClient({
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-[26px] font-semibold">Cuentas</h1>
         <Button onClick={() => setCreating(true)} className="gap-1.5">
-          <Plus size={17} /> Nueva cuenta
+          <Plus size={ICON.md} /> Nueva cuenta
         </Button>
       </div>
 
@@ -312,21 +313,21 @@ export function AccountsClient({
                   className="rounded-full p-1.5 text-(--foreground-subtle) hover:bg-(--surface-2) hover:text-(--foreground)"
                   aria-label="Editar"
                 >
-                  <Pencil size={14} />
+                  <Pencil size={ICON.sm} />
                 </button>
                 <button
                   onClick={() => archiveAccount(account.id, true)}
                   className="rounded-full p-1.5 text-(--foreground-subtle) hover:bg-(--surface-2) hover:text-(--foreground)"
                   aria-label="Archivar"
                 >
-                  <Archive size={14} />
+                  <Archive size={ICON.sm} />
                 </button>
                 <button
                   onClick={() => deleteAccount(account.id)}
                   className="rounded-full p-1.5 text-(--foreground-subtle) hover:bg-(--surface-2) hover:text-(--danger)"
                   aria-label="Eliminar"
                 >
-                  <Trash2 size={14} />
+                  <Trash2 size={ICON.sm} />
                 </button>
               </div>
             </div>

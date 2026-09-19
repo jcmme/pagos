@@ -2,6 +2,7 @@ import { LogOut } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { logoutAction } from "@/app/(app)/actions";
 import { MoreMenu } from "./MoreMenu";
+import { ICON } from "@/lib/icons";
 
 // Solo existe para móvil: la barra inferior muestra las secciones de uso
 // diario y aquí viven las demás.
@@ -20,16 +21,13 @@ export default function MasPage() {
         <form action={logoutAction}>
           <button type="submit" className="w-full text-left">
             <Card className="pressable flex items-center gap-3 p-4 text-[15px] text-(--danger)">
-              <LogOut size={19} />
+              <LogOut size={ICON.md} />
               Cerrar sesión
             </Card>
           </button>
         </form>
       </div>
 
-      {/* El botón flotante + se posa sobre la esquina inferior derecha; sin
-          este respiro taparía la última fila. */}
-      <div className="h-6" />
     </div>
   );
 }

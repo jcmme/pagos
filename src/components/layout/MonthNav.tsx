@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { MONTH_NAMES, shiftMonth } from "@/lib/dates";
+import { ICON } from "@/lib/icons";
 
 export function MonthNav({
   basePath,
@@ -22,7 +23,7 @@ export function MonthNav({
         href={`${basePath}?month=${prev.month}&year=${prev.year}`}
         className="flex h-8 w-8 items-center justify-center rounded-full text-(--foreground-muted) hover:bg-(--surface-2)"
       >
-        <ChevronLeft size={18} />
+        <ChevronLeft size={ICON.md} />
       </Link>
       <span className="w-36 text-center text-[15px] font-medium">
         {MONTH_NAMES[month - 1]} {year}
@@ -31,7 +32,7 @@ export function MonthNav({
         href={`${basePath}?month=${next.month}&year=${next.year}`}
         className="flex h-8 w-8 items-center justify-center rounded-full text-(--foreground-muted) hover:bg-(--surface-2)"
       >
-        <ChevronRight size={18} />
+        <ChevronRight size={ICON.md} />
       </Link>
     </div>
   );

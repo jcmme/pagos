@@ -10,6 +10,7 @@ import { Field, Input, Select, Textarea } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { formatCurrency, formatDate, cn } from "@/lib/utils";
 import { DEBT_TYPE_LABELS } from "@/lib/constants";
+import { ICON } from "@/lib/icons";
 import {
   createDebt,
   updateDebt,
@@ -151,7 +152,7 @@ function DebtCard({ debt }: { debt: SerializedDebt }) {
           )}
         </div>
         <ChevronDown
-          size={18}
+          size={ICON.md}
           className={cn("shrink-0 text-(--foreground-subtle) transition-transform", open && "rotate-180")}
         />
       </button>
@@ -191,7 +192,7 @@ function DebtCard({ debt }: { debt: SerializedDebt }) {
                       className="text-(--foreground-subtle) hover:text-(--danger)"
                       aria-label="Eliminar abono"
                     >
-                      <Trash2 size={13} />
+                      <Trash2 size={ICON.sm} />
                     </button>
                   </div>
                 </div>
@@ -204,13 +205,13 @@ function DebtCard({ debt }: { debt: SerializedDebt }) {
               onClick={() => setEditing(true)}
               className="flex items-center gap-1 text-[13px] text-(--foreground-muted) hover:text-(--foreground)"
             >
-              <Pencil size={13} /> Editar
+              <Pencil size={ICON.sm} /> Editar
             </button>
             <button
               onClick={() => deleteDebt(debt.id)}
               className="flex items-center gap-1 text-[13px] text-(--foreground-muted) hover:text-(--danger)"
             >
-              <Trash2 size={13} /> Eliminar
+              <Trash2 size={ICON.sm} /> Eliminar
             </button>
           </div>
         </div>
@@ -243,7 +244,7 @@ export function DebtsClient({ debts }: { debts: SerializedDebt[] }) {
     <div>
       <div className="mb-4 flex justify-end">
         <Button onClick={() => setCreating(true)} className="gap-1.5">
-          <Plus size={17} /> Nueva deuda
+          <Plus size={ICON.md} /> Nueva deuda
         </Button>
       </div>
 

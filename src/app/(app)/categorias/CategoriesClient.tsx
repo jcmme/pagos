@@ -11,6 +11,7 @@ import { CATEGORY_COLORS } from "@/lib/constants";
 import { CATEGORY_ICONS, ICON_GROUPS, guessIcon } from "@/lib/category-icons";
 import { CategoryGlyph } from "@/components/ui/CategoryGlyph";
 import { cn } from "@/lib/utils";
+import { ICON } from "@/lib/icons";
 import {
   createCategory,
   updateCategory,
@@ -114,7 +115,7 @@ function IconPicker({
                         : "bg-(--surface-3) text-(--foreground-muted) hover:text-(--foreground)"
                     )}
                   >
-                    <Icon size={16} />
+                    <Icon size={ICON.md} />
                   </button>
                 );
               })}
@@ -216,7 +217,7 @@ export function CategoriesClient({ categories }: { categories: Category[] }) {
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-[26px] font-semibold">Categorías</h1>
         <Button onClick={() => setCreating({ parentId: null })} className="gap-1.5">
-          <Plus size={17} /> Nueva categoría
+          <Plus size={ICON.md} /> Nueva categoría
         </Button>
       </div>
 
@@ -238,7 +239,7 @@ export function CategoriesClient({ categories }: { categories: Category[] }) {
                   <span className="truncate text-[15px] font-medium">{root.name}</span>
                   {root.essential && (
                     <Badge tone="accent" className="gap-1">
-                      <ShieldCheck size={11} /> Esencial
+                      <ShieldCheck size={ICON.sm} /> Esencial
                     </Badge>
                   )}
                 </div>
@@ -248,21 +249,21 @@ export function CategoriesClient({ categories }: { categories: Category[] }) {
                     className="rounded-full p-1.5 text-(--foreground-subtle) hover:bg-(--surface-2) hover:text-(--accent)"
                     aria-label="Agregar subcategoría"
                   >
-                    <Plus size={15} />
+                    <Plus size={ICON.sm} />
                   </button>
                   <button
                     onClick={() => setEditing(root)}
                     className="rounded-full p-1.5 text-(--foreground-subtle) hover:bg-(--surface-2) hover:text-(--foreground)"
                     aria-label="Editar"
                   >
-                    <Pencil size={14} />
+                    <Pencil size={ICON.sm} />
                   </button>
                   <button
                     onClick={() => deleteCategory(root.id)}
                     className="rounded-full p-1.5 text-(--foreground-subtle) hover:bg-(--surface-2) hover:text-(--danger)"
                     aria-label="Eliminar"
                   >
-                    <Trash2 size={14} />
+                    <Trash2 size={ICON.sm} />
                   </button>
                 </div>
               </div>
@@ -272,7 +273,7 @@ export function CategoriesClient({ categories }: { categories: Category[] }) {
                   {children.map((child) => (
                     <div key={child.id} className="flex items-center justify-between gap-3">
                       <div className="flex min-w-0 items-center gap-2 text-[14px]">
-                        <CornerDownRight size={14} className="shrink-0 text-(--foreground-subtle)" />
+                        <CornerDownRight size={ICON.sm} className="shrink-0 text-(--foreground-subtle)" />
                         <span className="truncate">{child.name}</span>
                         {child._count.transactions > 0 && (
                           <span className="text-[12px] text-(--foreground-subtle)">
@@ -286,14 +287,14 @@ export function CategoriesClient({ categories }: { categories: Category[] }) {
                           className="rounded-full p-1.5 text-(--foreground-subtle) hover:bg-(--surface-2) hover:text-(--foreground)"
                           aria-label="Editar"
                         >
-                          <Pencil size={13} />
+                          <Pencil size={ICON.sm} />
                         </button>
                         <button
                           onClick={() => deleteCategory(child.id)}
                           className="rounded-full p-1.5 text-(--foreground-subtle) hover:bg-(--surface-2) hover:text-(--danger)"
                           aria-label="Eliminar"
                         >
-                          <Trash2 size={13} />
+                          <Trash2 size={ICON.sm} />
                         </button>
                       </div>
                     </div>

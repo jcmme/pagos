@@ -4,10 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "node scripts/migrate-deploy.mjs && next build",
+    "build": "node scripts/check-icons.mjs && node scripts/migrate-deploy.mjs && next build",
     "start": "next start",
     "lint": "eslint",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "check:icons": "node scripts/check-icons.mjs"
   },
   "dependencies": {
     "@google/genai": "^2.22.0",
@@ -43,5 +44,11 @@
     "tailwindcss": "^4",
     "tsx": "^4.23.13",
     "typescript": "^5"
-  }
+  },
+  "browserslist": [
+    "last 2 Chrome versions",
+    "last 2 Safari versions",
+    "iOS >= 15",
+    "last 2 Firefox versions"
+  ]
 }

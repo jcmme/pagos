@@ -4,6 +4,7 @@ import Link from "next/link";
 import { BarChart3, ChevronRight, TrendingUp, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatMoneyParts } from "@/lib/money";
+import { ICON } from "@/lib/icons";
 
 export type MiniBar = {
   label: string;
@@ -50,9 +51,9 @@ export function MiniBars({
       className="pressable flex flex-col gap-3 rounded-(--radius-md) bg-(--surface) p-4"
     >
       <div className="flex items-center gap-1.5">
-        <Icon size={15} className="text-(--accent)" />
+        <Icon size={ICON.sm} className="text-(--accent)" />
         <span className="text-[14px] font-semibold">{title}</span>
-        <ChevronRight size={15} className="ml-auto text-(--foreground-subtle)" />
+        <ChevronRight size={ICON.sm} className="ml-auto text-(--foreground-subtle)" />
       </div>
 
       <div>

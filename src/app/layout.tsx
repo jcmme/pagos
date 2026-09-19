@@ -9,6 +9,9 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: "#000000",
+  // Sin esto, env(safe-area-inset-*) siempre vale cero y el dock flotante
+  // quedaría debajo del indicador de inicio del iPhone.
+  viewportFit: "cover",
   width: "device-width",
   initialScale: 1,
 };

@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { ICON } from "@/lib/icons";
 import {
   refreshSubscriptions,
   confirmSubscription,
@@ -49,7 +50,7 @@ export function SubscriptionsClient({ subscriptions }: { subscriptions: Subscrip
           onClick={() => startTransition(() => refreshSubscriptions())}
           className="gap-1.5"
         >
-          <RefreshCw size={15} /> Buscar de nuevo
+          <RefreshCw size={ICON.sm} /> Buscar de nuevo
         </Button>
       </div>
 
@@ -77,7 +78,7 @@ export function SubscriptionsClient({ subscriptions }: { subscriptions: Subscrip
                   </p>
                   {raised && (
                     <Badge tone="warning" className="mt-2 gap-1">
-                      <TrendingUp size={11} /> Subió de {formatCurrency(previous)} a{" "}
+                      <TrendingUp size={ICON.sm} /> Subió de {formatCurrency(previous)} a{" "}
                       {formatCurrency(last)}
                     </Badge>
                   )}
@@ -97,7 +98,7 @@ export function SubscriptionsClient({ subscriptions }: { subscriptions: Subscrip
                   }
                   className="gap-1.5"
                 >
-                  <Check size={15} /> Convertir en pago fijo
+                  <Check size={ICON.sm} /> Convertir en pago fijo
                 </Button>
                 <Button
                   variant="ghost"
@@ -105,7 +106,7 @@ export function SubscriptionsClient({ subscriptions }: { subscriptions: Subscrip
                   onClick={() => startTransition(() => dismissSubscription(item.id))}
                   className="gap-1.5"
                 >
-                  <X size={15} /> No es suscripción
+                  <X size={ICON.sm} /> No es suscripción
                 </Button>
               </div>
             </Card>

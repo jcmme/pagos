@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { X } from "lucide-react";
 import { Input } from "@/components/ui/Input";
+import { ICON } from "@/lib/icons";
 
 // Etiquetas libres: se escriben y se confirman con Enter o coma. Van al form
 // como un único campo separado por comas.
@@ -43,7 +44,7 @@ export function TagsInput({
                 className="text-(--foreground-subtle) hover:text-(--danger)"
                 aria-label={`Quitar ${tag}`}
               >
-                <X size={12} />
+                <X size={ICON.sm} />
               </button>
             </span>
           ))}

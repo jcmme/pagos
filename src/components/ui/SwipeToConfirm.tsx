@@ -5,6 +5,7 @@ import { ArrowRight, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useReducedMotion } from "@/lib/use-reduced-motion";
 import { Button } from "./Button";
+import { ICON } from "@/lib/icons";
 
 // Deslizar en vez de tocar para la última confirmación. No es adorno: un botón
 // en esa posición se pulsa sin querer con el pulgar, y este gesto es justo lo
@@ -46,7 +47,7 @@ export function SwipeToConfirm({
     return (
       <Button type="button" disabled={disabled || pending} onClick={onConfirm}>
         <span className="flex items-center justify-center gap-1.5">
-          <Check size={16} />
+          <Check size={ICON.md} />
           {pending ? confirmingLabel : label}
         </span>
       </Button>
@@ -147,7 +148,7 @@ export function SwipeToConfirm({
           touchAction: "none",
         }}
       >
-        {progress >= COMMIT ? <Check size={20} /> : <ArrowRight size={20} />}
+        {progress >= COMMIT ? <Check size={ICON.lg} /> : <ArrowRight size={ICON.lg} />}
       </button>
     </div>
   );

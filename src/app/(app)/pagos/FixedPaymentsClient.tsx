@@ -12,6 +12,7 @@ import { Modal } from "@/components/ui/Modal";
 import { formatCurrency } from "@/lib/utils";
 import { FREQUENCY_LABELS, MONTH_NAMES_SHORT } from "@/lib/constants";
 import { computeNextDueDate, daysUntil } from "@/modules/fixed-payments/next-due-date";
+import { ICON } from "@/lib/icons";
 import {
   createFixedPayment,
   updateFixedPayment,
@@ -211,7 +212,7 @@ export function FixedPaymentsClient({
     <div>
       <div className="mb-4 flex justify-end">
         <Button onClick={() => setCreating(true)} className="gap-1.5">
-          <Plus size={17} /> Nuevo pago fijo
+          <Plus size={ICON.md} /> Nuevo pago fijo
         </Button>
       </div>
 
@@ -258,7 +259,7 @@ export function FixedPaymentsClient({
                     className="flex items-center gap-1 rounded-(--radius-full) bg-(--surface-2) px-2.5 py-1 text-[12px] text-(--foreground-muted) hover:text-(--success)"
                     title="Marcar como pagado"
                   >
-                    <Check size={13} /> Pagado
+                    <Check size={ICON.sm} /> Pagado
                   </button>
                   <button
                     onClick={() => toggleFixedPaymentActive(p.id, !p.active)}
@@ -271,14 +272,14 @@ export function FixedPaymentsClient({
                     className="rounded-full p-1.5 text-(--foreground-subtle) hover:bg-(--surface-2) hover:text-(--foreground)"
                     aria-label="Editar"
                   >
-                    <Pencil size={14} />
+                    <Pencil size={ICON.sm} />
                   </button>
                   <button
                     onClick={() => deleteFixedPayment(p.id)}
                     className="rounded-full p-1.5 text-(--foreground-subtle) hover:bg-(--surface-2) hover:text-(--danger)"
                     aria-label="Eliminar"
                   >
-                    <Trash2 size={14} />
+                    <Trash2 size={ICON.sm} />
                   </button>
                 </div>
               </div>

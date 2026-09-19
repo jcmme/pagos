@@ -33,5 +33,7 @@ export const NAV_ITEMS = [
   { href: "/ajustes", label: "Ajustes", icon: Settings },
 ];
 
-// Las secciones de uso diario, que son las que caben en la barra inferior.
-export const PRIMARY_HREFS = ["/", "/movimientos", "/importar", "/salud"];
+// Las secciones de uso diario, que son las que caben en el dock junto al
+// botón de capturar. Importar se quedó fuera porque subir un estado de cuenta
+// se hace una vez al mes, no a diario.
+export const PRIMARY_HREFS = ["/", "/movimientos", "/salud"];
