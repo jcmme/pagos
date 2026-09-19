@@ -1,10 +1,12 @@
 import { getHealthReport } from "@/lib/metrics";
+import { getMonthlyTotals } from "@/lib/metrics/monthly";
 import { requireUserId } from "@/lib/session";
 import { Card, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { formatCurrency } from "@/lib/utils";
 import type { Metric } from "@/lib/metrics/types";
+import { MonthlyTrend } from "../MonthlyTrend";
 
 export const dynamic = "force-dynamic";
 
@@ -57,7 +59,11 @@ function MetricCard({
 }
 
 export default async function SaludPage() {
-  const report = await getHealthReport(await requireUserId());
+  const userId = await requireUserId();
+  const [report, monthly] = await Promise.all([
+    getHealthReport(userId),
+    getMonthlyTotals(userId),
+  ]);
 
   const percent = (value: number) => `${Math.round(value * 100)}%`;
   const months = (value: number) => `${value.toFixed(1)} meses`;
@@ -159,6 +165,16 @@ export default async function SaludPage() {
           </div>
         </Card>
       </div>
+
+      {/* Vive aquí y no en el Resumen: allá compite con el panel de tendencia,
+          que dice lo mismo en chico. Esta es la pantalla del detalle. */}
+      <Card>
+        <CardTitle className="mb-1">Gasto de los últimos 6 meses</CardTitle>
+        <p className="mb-3 text-[12px] text-(--foreground-subtle)">
+          Incluye el mes en curso, que todavía va a la mitad.
+        </p>
+        <MonthlyTrend data={monthly} />
+      </Card>
     </div>
   );
 }

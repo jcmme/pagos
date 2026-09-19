@@ -4,7 +4,6 @@ import { requireUserId } from "@/lib/session";
 import { currentMonthYear, monthRange } from "@/lib/dates";
 import { Card, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
-import { ProgressBar } from "@/components/ui/ProgressBar";
 import { CountUp } from "@/components/ui/CountUp";
 import { formatCurrency, toNumber } from "@/lib/utils";
 import { computeNextDueDate, daysUntil } from "@/modules/fixed-payments/next-due-date";
@@ -12,9 +11,11 @@ import { getHealthReport } from "@/lib/metrics";
 import { getAvailableToSpend } from "@/lib/metrics/available";
 import { generateInsights } from "@/modules/insights/generate";
 import { getMonthlyTotals } from "@/lib/metrics/monthly";
+import { getWeekTotals } from "@/lib/metrics/daily";
 import { nextMonthlyDate } from "@/modules/reminders/schedule";
 import { CategoryChart } from "./CategoryChart";
-import { MonthlyTrend } from "./MonthlyTrend";
+import { Hero, type HeroPill } from "./Hero";
+import { MiniBars } from "./MiniBars";
 import { PaymentCalendar, type CalendarEvent } from "./PaymentCalendar";
 import { InsightsList } from "./InsightsList";
 import { PushManager } from "@/components/PushManager";
@@ -40,7 +41,7 @@ export default async function DashboardPage() {
   const { month, year } = currentMonthYear();
   const { start, end } = monthRange(year, month);
 
-  const [payments, expenses, budgets, health, available, insights, monthly, cards] =
+  const [payments, expenses, budgets, health, available, insights, monthly, week, cards] =
     await Promise.all([
     prisma.fixedPayment.findMany({
       where: { userId, active: true, kind: "EXPENSE" },
@@ -60,6 +61,7 @@ export default async function DashboardPage() {
     getAvailableToSpend(userId),
     generateInsights(userId),
     getMonthlyTotals(userId),
+    getWeekTotals(userId),
     prisma.account.findMany({
       where: { userId, type: "CREDIT_CARD", archived: false },
       select: { id: true, name: true, cutoffDay: true, paymentDueDay: true },
@@ -73,6 +75,60 @@ export default async function DashboardPage() {
     .map((payment) => ({ payment, days: daysUntil(computeNextDueDate(payment)) }))
     .sort((a, b) => a.days - b.days)
     .slice(0, 5);
+
+  // Las píldoras del encabezado. Salen de lo que ya está en memoria: ninguna
+  // añade una consulta.
+  const now = new Date();
+  const todayKey = now.toISOString().slice(0, 10);
+  const todaySpent = expenses
+    .filter((expense) => expense.date.toISOString().slice(0, 10) === todayKey)
+    .reduce((sum, expense) => sum + toNumber(expense.amount), 0);
+  // Promedio sobre los días transcurridos, no sobre el mes entero: el día 3
+  // dividir entre 30 haría parecer que no se gasta nada.
+  const perDay = totalSpent / Math.max(1, now.getUTCDate());
+  const nextPayment = upcoming[0];
+
+  const pills: HeroPill[] = [];
+  if (totalBudget > 0) {
+    const used = totalSpent / totalBudget;
+    pills.push({
+      label: "Presupuesto",
+      value: `${Math.round(used * 100)}%`,
+      tone: used >= 1 ? "danger" : used >= 0.8 ? "warning" : "success",
+      href: "/presupuestos",
+      icon: "budget",
+    });
+  }
+  pills.push(
+    {
+      label: "Hoy",
+      value: formatCurrency(todaySpent),
+      tone: "accent",
+      href: "/movimientos",
+      icon: "today",
+    },
+    {
+      label: "Por día",
+      value: formatCurrency(perDay),
+      tone: "purple",
+      href: "/movimientos",
+      icon: "perDay",
+    }
+  );
+  if (nextPayment) {
+    const tone = urgencyTone(nextPayment.days);
+    pills.push({
+      label: nextPayment.payment.name,
+      value: urgencyLabel(nextPayment.days),
+      // urgencyTone devuelve "neutral" a más de una semana, que no es un color
+      // de píldora; ahí basta el acento.
+      tone: tone === "neutral" ? "accent" : tone,
+      href: "/pagos",
+      icon: "payment",
+    });
+  }
+
+  const weekTotal = week.reduce((sum, day) => sum + day.total, 0);
 
   // Se agrupa por la categoría raíz para que la gráfica no se fragmente en
   // veinte barras de subcategorías. Con tres niveles hay que subir dos veces,
@@ -139,65 +195,51 @@ export default async function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <h1 className="text-[26px] font-semibold">Resumen</h1>
-
-      <Card>
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <CardTitle>Disponible para gastar</CardTitle>
-            {available.available ? (
-              <>
-                <p
-                  className={`mt-1 text-[32px] font-semibold leading-tight ${
-                    available.amount < 0 ? "text-(--danger)" : "text-(--success)"
-                  }`}
-                >
-                  <CountUp value={available.amount} />
-                </p>
-                <p className="mt-1 text-[13px] text-(--foreground-muted)">
-                  {formatCurrency(available.liquid)} en cuentas −{" "}
-                  {formatCurrency(available.upcomingPayments)} de pagos próximos
-                  {available.goalReserves > 0
-                    ? ` − ${formatCurrency(available.goalReserves)} apartado en metas`
-                    : ""}
-                </p>
-                <p className="mt-0.5 text-[12px] text-(--foreground-subtle)">
-                  {available.nextIncomeAt
-                    ? `Hasta tu próximo ingreso, en ${available.horizonDays} días.`
-                    : `Hasta fin de mes, en ${available.horizonDays} días.`}
-                </p>
-              </>
-            ) : (
-              <p className="mt-2 text-[13px] text-(--foreground-muted)">{available.reason}</p>
-            )}
-          </div>
-
-          <Link href="/salud" className="text-right">
-            <p className="text-[13px] text-(--foreground-muted)">Salud financiera</p>
-            <p className="text-[32px] font-semibold leading-tight">
-              {health.enoughData ? health.score : "—"}
-            </p>
-            <p className="text-[12px] text-(--accent)">Ver detalle</p>
-          </Link>
-        </div>
-      </Card>
+      <Hero
+        amount={available.amount}
+        available={available.available}
+        reason={available.reason}
+        spent={totalSpent}
+        budget={totalBudget}
+        horizonDays={available.horizonDays}
+        hasNextIncome={available.nextIncomeAt !== null}
+        pills={pills}
+      />
 
       <InsightsList insights={insights} />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Card>
-          <CardTitle>Gasto del mes</CardTitle>
-          <p className="mt-1 text-[26px] font-semibold"><CountUp value={totalSpent} /></p>
-          {totalBudget > 0 && (
-            <>
-              <p className="mt-1 text-[13px] text-(--foreground-muted)">
-                de {formatCurrency(totalBudget)} presupuestados
-              </p>
-              <ProgressBar value={totalSpent} max={totalBudget} className="mt-2" />
-            </>
-          )}
-        </Card>
+      {/* Los dos paneles chicos sustituyen a la tarjeta de "Gasto del mes":
+          decían lo mismo que la barra del encabezado, pero sin el reparto por
+          día ni por mes. */}
+      <div className="grid grid-cols-2 gap-3">
+        <MiniBars
+          title="Semana"
+          icon="weekly"
+          period="Esta semana"
+          total={weekTotal}
+          href="/movimientos"
+          bars={week.map((day) => ({
+            label: day.label,
+            value: day.total,
+            current: day.isToday,
+            future: day.isFuture,
+          }))}
+        />
+        <MiniBars
+          title="Tendencia"
+          icon="trend"
+          period="Este mes"
+          total={totalSpent}
+          href="/salud"
+          bars={monthly.map((item, index) => ({
+            label: item.label.slice(0, 1),
+            value: item.expenses,
+            current: index === monthly.length - 1,
+          }))}
+        />
+      </div>
 
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Card>
           <CardTitle>Patrimonio neto</CardTitle>
           <p
@@ -212,6 +254,16 @@ export default async function DashboardPage() {
             <span>Pasivos {formatCurrency(health.netWorth.liabilities)}</span>
           </div>
         </Card>
+
+        <Link href="/salud">
+          <Card className="pressable h-full">
+            <CardTitle>Salud financiera</CardTitle>
+            <p className="mt-1 text-[26px] font-semibold">
+              {health.enoughData ? health.score : "—"}
+            </p>
+            <p className="mt-1 text-[13px] text-(--accent)">Ver detalle</p>
+          </Card>
+        </Link>
       </div>
 
       <Card>
@@ -263,14 +315,6 @@ export default async function DashboardPage() {
           Este mes. Toca una para ver sus movimientos.
         </p>
         <CategoryChart data={chartData} />
-      </Card>
-
-      <Card>
-        <CardTitle className="mb-1">Gasto de los últimos 6 meses</CardTitle>
-        <p className="mb-3 text-[12px] text-(--foreground-subtle)">
-          Incluye el mes en curso, que todavía va a la mitad.
-        </p>
-        <MonthlyTrend data={monthly} />
       </Card>
 
       <PushManager />

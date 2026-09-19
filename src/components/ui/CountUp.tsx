@@ -15,7 +15,12 @@ function easeOut(t: number) {
   return 1 - Math.pow(1 - t, 3);
 }
 
-export function CountUp({ value, className }: { value: number; className?: string }) {
+/**
+ * El valor mientras sube. Va aparte del componente porque el encabezado del
+ * Resumen necesita el número, no el texto ya formateado: ahí los centavos van
+ * en otro tamaño y hay que partir la cantidad en piezas.
+ */
+export function useCountUp(value: number) {
   const reducedMotion = useReducedMotion();
   // null significa "enseña el valor de verdad". Así el HTML del servidor y el
   // primer render del cliente coinciden, no hay desajuste de hidratación, y si
@@ -42,5 +47,9 @@ export function CountUp({ value, className }: { value: number; className?: strin
     };
   }, [value, reducedMotion]);
 
-  return <span className={className}>{formatCurrency(shown ?? value)}</span>;
+  return shown ?? value;
+}
+
+export function CountUp({ value, className }: { value: number; className?: string }) {
+  return <span className={className}>{formatCurrency(useCountUp(value))}</span>;
 }
