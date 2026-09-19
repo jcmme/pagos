@@ -16,6 +16,14 @@ export const categorySchema = z.object({
     .optional()
     .nullable()
     .transform((value) => (!value || value === "none" ? null : value)),
+  // La clave de un icono del catálogo, o null si se prefiere la inicial. No se
+  // valida contra la lista: un icono que deje de existir se resuelve a null al
+  // leerlo, en vez de impedir guardar la categoría.
+  icon: z
+    .string()
+    .optional()
+    .nullable()
+    .transform((value) => (!value || value === "none" ? null : value)),
   essential: z.coerce.boolean().default(false),
 });
 

@@ -1,5 +1,6 @@
 import type { PrismaClient } from "@prisma/client";
 import { DEFAULT_CATEGORIES } from "./default-categories";
+import { guessIcon } from "./category-icons";
 
 // Los colores que traían las categorías iniciales antes de que la paleta se
 // validara para daltonismo. Se reemplazan al resembrar; un color que el
@@ -14,6 +15,16 @@ const LEGACY_COLORS = new Set([
   "#ffd60a",
   "#ff375f",
 ]);
+
+// El icono se deduce del nombre y solo se escribe donde no hay ninguno, igual
+// que ya se hace con el color: resembrar nunca debe pisar lo que alguien
+// eligió a mano. Una categoría con nombre propio, como el de una escuela, no
+// casa con ninguna pista y se queda con su inicial, que es lo correcto.
+function iconPatch(name: string, current: string | null) {
+  if (current) return {};
+  const icon = guessIcon(name);
+  return icon ? { icon } : {};
+}
 
 // Idempotente: se puede correr las veces que haga falta sin duplicar nada ni
 // pisar las categorías que el usuario haya creado.
@@ -32,6 +43,7 @@ export async function seedCategories(prisma: PrismaClient): Promise<number> {
             essential: category.essential,
             sortOrder: index,
             ...(LEGACY_COLORS.has(existing.color) ? { color: category.color } : {}),
+            ...iconPatch(category.name, existing.icon),
           },
         })
       : await prisma.category.create({
@@ -40,6 +52,7 @@ export async function seedCategories(prisma: PrismaClient): Promise<number> {
             color: category.color,
             essential: category.essential,
             sortOrder: index,
+            ...iconPatch(category.name, null),
           },
         });
 
@@ -51,11 +64,12 @@ export async function seedCategories(prisma: PrismaClient): Promise<number> {
       });
 
       if (child) {
-        if (LEGACY_COLORS.has(child.color)) {
-          await prisma.category.update({
-            where: { id: child.id },
-            data: { color: category.color },
-          });
+        const patch = {
+          ...(LEGACY_COLORS.has(child.color) ? { color: category.color } : {}),
+          ...iconPatch(childName, child.icon),
+        };
+        if (Object.keys(patch).length > 0) {
+          await prisma.category.update({ where: { id: child.id }, data: patch });
         }
         continue;
       }
@@ -67,10 +81,24 @@ export async function seedCategories(prisma: PrismaClient): Promise<number> {
           essential: category.essential,
           parentId: parent.id,
           sortOrder: childIndex,
+          ...iconPatch(childName, null),
         },
       });
       count += 1;
     }
+  }
+
+  // Las categorías que creó el usuario también merecen icono. Solo se tocan
+  // las que no tienen ninguno, y las que no casan con ninguna pista —un
+  // nombre propio como "Loreto"— se quedan con su inicial.
+  const withoutIcon = await prisma.category.findMany({
+    where: { icon: null },
+    select: { id: true, name: true },
+  });
+  for (const category of withoutIcon) {
+    const icon = guessIcon(category.name);
+    if (!icon) continue;
+    await prisma.category.update({ where: { id: category.id }, data: { icon } });
   }
 
   return count;

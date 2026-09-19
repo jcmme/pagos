@@ -6,6 +6,7 @@ export type QuickCategory = {
   id: string;
   name: string;
   color: string;
+  icon: string | null;
   parentId: string | null;
 };
 
@@ -42,7 +43,7 @@ export async function getQuickCaptureData(userId: string): Promise<QuickCaptureD
   const [categories, accounts, recent, budgets, spentByCategory] = await Promise.all([
     prisma.category.findMany({
       where: { archived: false },
-      select: { id: true, name: true, color: true, parentId: true },
+      select: { id: true, name: true, color: true, icon: true, parentId: true },
       orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
     }),
     prisma.account.findMany({

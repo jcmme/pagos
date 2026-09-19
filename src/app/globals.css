@@ -115,6 +115,41 @@ body {
   border: 1px solid var(--border);
 }
 
+/* --- Iconos de categoría ---------------------------------------------------
+   Se dibujan al desplegarse y nunca en bucle. No hace falta observador: estas
+   animaciones corren al montarse, y los iconos se montan exactamente cuando
+   se abre la hoja de captura o se entra a Categorías, que es cuando el
+   usuario pidió que tuvieran vida.
+
+   El trazo no se anima con stroke-dashoffset porque eso exige conocer el
+   largo de cada path, que solo se sabe midiendo en JavaScript. Un barrido
+   vertical con clip-path se lee igual de bien y funciona con cualquier icono. */
+.glyph-ring {
+  animation: glyph-ring 0.45s var(--ease-out) both;
+}
+
+.glyph-mark {
+  animation: glyph-mark 0.5s var(--ease-out) 0.1s both;
+}
+
+@keyframes glyph-ring {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+}
+
+@keyframes glyph-mark {
+  from {
+    clip-path: inset(100% 0 0 0);
+    opacity: 0;
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+    opacity: 1;
+  }
+}
+
 /* --- Miniaturas del menú "Más" -------------------------------------------
    Cada función del menú se explica con una animación de ~1 s que se dispara
    una sola vez, cuando la fila entra en pantalla. El observador solo pone

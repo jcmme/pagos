@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronRight, CornerUpLeft } from "lucide-react";
+import { CategoryGlyph } from "@/components/ui/CategoryGlyph";
 import { cn, formatCurrency } from "@/lib/utils";
 import type { QuickCategory, BudgetStatus } from "@/modules/transactions/quick-data";
 
@@ -68,7 +69,7 @@ export function CategoryPicker({
       )}
 
       <div className="grid grid-cols-3 gap-2">
-        {visible.map((category) => {
+        {visible.map((category, index) => {
           const budget = budgetOf(category.id);
           const remaining = budget ? budget.limit - budget.spent : null;
 
@@ -87,12 +88,12 @@ export function CategoryPicker({
                 "transition-colors active:bg-(--surface-3)"
               )}
             >
-              <span
-                className="flex h-9 w-9 items-center justify-center rounded-full text-[15px] font-semibold text-black/80"
-                style={{ background: category.color }}
-              >
-                {category.name.slice(0, 1).toUpperCase()}
-              </span>
+              <CategoryGlyph
+                name={category.name}
+                color={category.color}
+                icon={category.icon}
+                index={index}
+              />
               <span className="text-[12px] leading-tight text-(--foreground)">
                 {category.name}
               </span>

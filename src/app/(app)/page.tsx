@@ -12,8 +12,10 @@ import { getAvailableToSpend } from "@/lib/metrics/available";
 import { generateInsights } from "@/modules/insights/generate";
 import { getMonthlyTotals } from "@/lib/metrics/monthly";
 import { getWeekTotals } from "@/lib/metrics/daily";
+import { getAccountsWithBalances } from "@/modules/accounts/balance";
 import { nextMonthlyDate } from "@/modules/reminders/schedule";
 import { CategoryChart } from "./CategoryChart";
+import { AccountCarousel } from "./AccountCarousel";
 import { Hero, type HeroPill } from "./Hero";
 import { MiniBars } from "./MiniBars";
 import { PaymentCalendar, type CalendarEvent } from "./PaymentCalendar";
@@ -41,7 +43,7 @@ export default async function DashboardPage() {
   const { month, year } = currentMonthYear();
   const { start, end } = monthRange(year, month);
 
-  const [payments, expenses, budgets, health, available, insights, monthly, week, cards] =
+  const [payments, expenses, budgets, health, available, insights, monthly, week, accounts] =
     await Promise.all([
     prisma.fixedPayment.findMany({
       where: { userId, active: true, kind: "EXPENSE" },
@@ -62,11 +64,13 @@ export default async function DashboardPage() {
     generateInsights(userId),
     getMonthlyTotals(userId),
     getWeekTotals(userId),
-    prisma.account.findMany({
-      where: { userId, type: "CREDIT_CARD", archived: false },
-      select: { id: true, name: true, cutoffDay: true, paymentDueDay: true },
-    }),
+    getAccountsWithBalances(userId),
   ]);
+
+  // El calendario solo necesita las tarjetas, que salen del mismo listado en
+  // vez de una segunda consulta.
+  const activeAccounts = accounts.filter((account) => !account.archived);
+  const cards = activeAccounts.filter((account) => account.type === "CREDIT_CARD");
 
   const totalSpent = expenses.reduce((sum, expense) => sum + toNumber(expense.amount), 0);
   const totalBudget = budgets.reduce((sum, budget) => sum + toNumber(budget.amount), 0);
@@ -205,6 +209,8 @@ export default async function DashboardPage() {
         hasNextIncome={available.nextIncomeAt !== null}
         pills={pills}
       />
+
+      <AccountCarousel accounts={activeAccounts} />
 
       <InsightsList insights={insights} />
 

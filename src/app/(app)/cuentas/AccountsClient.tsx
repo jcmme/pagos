@@ -9,8 +9,7 @@ import { Field, Input, Select } from "@/components/ui/Input";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { Modal } from "@/components/ui/Modal";
 import { formatCurrency } from "@/lib/utils";
-import { daysUntil } from "@/modules/fixed-payments/next-due-date";
-import { nextMonthlyDate } from "@/modules/reminders/schedule";
+import { cardStatus, daysLabel } from "@/modules/accounts/card-status";
 import { ACCOUNT_TYPE_LABELS, CATEGORY_COLORS } from "@/lib/constants";
 import {
   createAccount,
@@ -196,11 +195,10 @@ function AccountForm({
   );
 }
 
-// Lo que de verdad se quiere saber de una tarjeta: cuánto se ha usado del
-// límite, cuándo cierra el periodo y cuántos días faltan para la fecha límite
-// de pago.
 function CardDetail({ account }: { account: AccountWithBalance }) {
-  if (!account.cutoffDay && !account.paymentDueDay && !account.creditLimit) {
+  const status = cardStatus(account);
+
+  if (!status.configured) {
     return (
       <p className="mt-3 border-t border-(--border) pt-3 text-[12px] text-(--foreground-subtle)">
         Agrega el día de corte y el día límite de pago para que se te recuerde.
@@ -208,54 +206,35 @@ function CardDetail({ account }: { account: AccountWithBalance }) {
     );
   }
 
-  // El saldo de una tarjeta es negativo cuando se debe: lo usado es su valor
-  // absoluto.
-  const used = account.balance < 0 ? Math.abs(account.balance) : 0;
-  const cutoffDays = account.cutoffDay
-    ? daysUntil(nextMonthlyDate(account.cutoffDay))
-    : null;
-  const dueDays = account.paymentDueDay
-    ? daysUntil(nextMonthlyDate(account.paymentDueDay))
-    : null;
-
   return (
     <div className="mt-3 border-t border-(--border) pt-3">
-      {account.creditLimit ? (
+      {status.limit ? (
         <>
           <div className="mb-1 flex justify-between text-[12px] text-(--foreground-muted)">
             <span>Usado</span>
             <span>
-              {formatCurrency(used)} de {formatCurrency(account.creditLimit)}
+              {formatCurrency(status.used)} de {formatCurrency(status.limit)}
             </span>
           </div>
-          <ProgressBar
-            value={used}
-            max={account.creditLimit}
-            semantics="limit"
-          />
+          <ProgressBar value={status.used} max={status.limit} semantics="limit" />
         </>
       ) : null}
 
       <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[12px]">
-        {cutoffDays !== null && (
+        {status.cutoffDays !== null && (
           <span className="text-(--foreground-muted)">
-            Corte {cutoffDays === 0 ? "hoy" : `en ${cutoffDays} d`}
+            Corte {daysLabel(status.cutoffDays)}
           </span>
         )}
-        {dueDays !== null && (
+        {status.dueDays !== null && (
           <span
             className={
-              dueDays <= 2
+              status.dueDays <= 2
                 ? "font-medium text-(--warning)"
                 : "text-(--foreground-muted)"
             }
           >
-            Pago límite{" "}
-            {dueDays === 0
-              ? "hoy"
-              : dueDays === 1
-                ? "mañana"
-                : `en ${dueDays} d`}
+            Pago límite {daysLabel(status.dueDays)}
           </span>
         )}
       </div>

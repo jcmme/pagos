@@ -17,6 +17,7 @@ function parseForm(formData: FormData) {
   return categorySchema.safeParse({
     name: formData.get("name"),
     color: formData.get("color"),
+    icon: formData.get("icon"),
     parentId: formData.get("parentId"),
     essential: formData.get("essential") === "on",
   });

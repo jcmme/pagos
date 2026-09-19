@@ -8,6 +8,9 @@ import { Badge } from "@/components/ui/Badge";
 import { Field, Input, Select } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { CATEGORY_COLORS } from "@/lib/constants";
+import { CATEGORY_ICONS, ICON_GROUPS, guessIcon } from "@/lib/category-icons";
+import { CategoryGlyph } from "@/components/ui/CategoryGlyph";
+import { cn } from "@/lib/utils";
 import {
   createCategory,
   updateCategory,
@@ -19,6 +22,7 @@ type Category = {
   id: string;
   name: string;
   color: string;
+  icon: string | null;
   parentId: string | null;
   essential: boolean;
   parent: { id: string; name: string } | null;
@@ -46,6 +50,76 @@ function ColorPicker({ name, defaultValue }: { name: string; defaultValue: strin
             }}
             aria-label={option}
           />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function IconPicker({
+  name,
+  defaultValue,
+  categoryName,
+  color,
+}: {
+  name: string;
+  defaultValue: string | null;
+  categoryName: string;
+  color: string;
+}) {
+  // Sin icono guardado se propone el que sugiere el nombre, pero nada se
+  // escribe hasta que se toca: la propuesta es una ayuda, no una decisión.
+  const [icon, setIcon] = useState<string | null>(
+    defaultValue ?? guessIcon(categoryName)
+  );
+
+  return (
+    <div>
+      <input type="hidden" name={name} value={icon ?? "none"} />
+
+      <div className="mb-2 flex items-center gap-2">
+        <CategoryGlyph
+          name={categoryName || "?"}
+          color={color}
+          icon={icon}
+          animate={false}
+        />
+        <button
+          type="button"
+          onClick={() => setIcon(null)}
+          className="text-[12px] text-(--foreground-muted) underline-offset-2 hover:underline"
+        >
+          Usar la inicial
+        </button>
+      </div>
+
+      <div className="max-h-44 overflow-y-auto rounded-(--radius-md) bg-(--surface-2) p-2">
+        {ICON_GROUPS.map((group) => (
+          <div key={group.label} className="mb-2 last:mb-0">
+            <p className="mb-1 text-[11px] text-(--foreground-subtle)">{group.label}</p>
+            <div className="flex flex-wrap gap-1.5">
+              {group.icons.map((option) => {
+                const Icon = CATEGORY_ICONS[option];
+                return (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => setIcon(option)}
+                    aria-label={option}
+                    aria-pressed={icon === option}
+                    className={cn(
+                      "flex h-8 w-8 items-center justify-center rounded-(--radius-sm) transition-colors",
+                      icon === option
+                        ? "bg-(--accent) text-white"
+                        : "bg-(--surface-3) text-(--foreground-muted) hover:text-(--foreground)"
+                    )}
+                  >
+                    <Icon size={16} />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         ))}
       </div>
     </div>
@@ -97,6 +171,16 @@ function CategoryForm({
         <ColorPicker name="color" defaultValue={defaults?.color ?? CATEGORY_COLORS[0]} />
       </Field>
 
+      <Field>
+        Icono
+        <IconPicker
+          name="icon"
+          defaultValue={defaults?.icon ?? null}
+          categoryName={defaults?.name ?? ""}
+          color={defaults?.color ?? CATEGORY_COLORS[0]}
+        />
+      </Field>
+
       <label className="flex items-start gap-2 text-[13px] text-(--foreground-muted)">
         <input
           type="checkbox"
@@ -137,16 +221,19 @@ export function CategoriesClient({ categories }: { categories: Category[] }) {
       </div>
 
       <div className="stagger flex flex-col gap-3">
-        {roots.map((root) => {
+        {roots.map((root, index) => {
           const children = categories.filter((category) => category.parentId === root.id);
 
           return (
             <Card key={root.id} className="p-4">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-2.5">
-                  <span
-                    className="h-3 w-3 shrink-0 rounded-full"
-                    style={{ background: root.color }}
+                  <CategoryGlyph
+                    name={root.name}
+                    color={root.color}
+                    icon={root.icon}
+                    size="sm"
+                    index={index}
                   />
                   <span className="truncate text-[15px] font-medium">{root.name}</span>
                   {root.essential && (
