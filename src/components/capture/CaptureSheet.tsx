@@ -1,9 +1,19 @@
 "use client";
 
-import { useActionState, useState } from "react";
-import { ArrowRight, Check, ChevronDown, Pencil } from "lucide-react";
+import { useActionState, useRef, useState } from "react";
+import {
+  ArrowDown,
+  ArrowRight,
+  ArrowUp,
+  CalendarDays,
+  ChevronDown,
+  Pencil,
+  StickyNote,
+  type LucideIcon,
+} from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
+import { SwipeToConfirm } from "@/components/ui/SwipeToConfirm";
 import { Field, Input, Select } from "@/components/ui/Input";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { cn, formatCurrency } from "@/lib/utils";
@@ -26,6 +36,13 @@ const initialState: ActionState = { error: null };
 function todayValue() {
   return new Date().toISOString().slice(0, 10);
 }
+
+// Lo que se puede ajustar sin salir del teclado. La cuenta no está aquí a
+// propósito: casi siempre se repite y vive en "Más detalles" del segundo paso.
+const CHIPS: { id: "nota" | "fecha"; label: string; icon: LucideIcon }[] = [
+  { id: "nota", label: "Nota", icon: StickyNote },
+  { id: "fecha", label: "Fecha", icon: CalendarDays },
+];
 
 // Cada apertura monta una instancia nueva (la llave se la pone el botón), así
 // que el estado empieza limpio sin resetearlo a mano en un efecto: arrastrar el
@@ -50,6 +67,12 @@ export function CaptureSheet({
   const [path, setPath] = useState<QuickCategory[]>([]);
   const [accountId, setAccountId] = useState<string>("none");
   const [showDetails, setShowDetails] = useState(false);
+  // La nota y la fecha se controlan desde React porque los chips del primer
+  // paso y el resumen del segundo tienen que ver el mismo valor.
+  const [description, setDescription] = useState("");
+  const [date, setDate] = useState(todayValue());
+  const [field, setField] = useState<"nota" | "fecha" | null>(null);
+  const form = useRef<HTMLFormElement>(null);
 
   const [state, formAction, pending] = useActionState(
     async (prev: ActionState, formData: FormData) => {
@@ -74,7 +97,7 @@ export function CaptureSheet({
       onClose={onClose}
       title={step === "monto" ? "Monto" : "Nuevo movimiento"}
     >
-      <form action={formAction} className="flex flex-col gap-4">
+      <form ref={form} action={formAction} className="flex flex-col gap-4">
         <input type="hidden" name="kind" value={kind} />
         <input
           type="hidden"
@@ -83,9 +106,65 @@ export function CaptureSheet({
         />
         <input type="hidden" name="categoryId" value={category?.id ?? "none"} />
         <input type="hidden" name="accountId" value={accountId} />
+        <input type="hidden" name="date" value={date} />
+        <input type="hidden" name="description" value={description} />
 
         {step === "monto" ? (
           <>
+            {/* Los ajustes que uno querría tocar sin salir del teclado. Cada
+                chip abre su campo justo debajo en vez de mandar a otra
+                pantalla, que es lo que hacía "Más detalles". */}
+            <div className="flex gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <button
+                type="button"
+                onClick={() => setKind(kind === "EXPENSE" ? "INCOME" : "EXPENSE")}
+                className={cn(
+                  "pressable flex shrink-0 items-center gap-1.5 rounded-(--radius-md) px-3 py-2 text-[12px] font-medium",
+                  kind === "EXPENSE"
+                    ? "bg-(--danger)/15 text-(--danger)"
+                    : "bg-(--success)/15 text-(--success)"
+                )}
+              >
+                {kind === "EXPENSE" ? <ArrowUp size={14} /> : <ArrowDown size={14} />}
+                {kind === "EXPENSE" ? "Gasto" : "Ingreso"}
+              </button>
+
+              {CHIPS.map((chip) => {
+                const Icon = chip.icon;
+                const open = field === chip.id;
+                const filled = chip.id === "nota" ? description !== "" : date !== todayValue();
+                return (
+                  <button
+                    key={chip.id}
+                    type="button"
+                    onClick={() => setField(open ? null : chip.id)}
+                    className={cn(
+                      "pressable flex shrink-0 items-center gap-1.5 rounded-(--radius-md) px-3 py-2 text-[12px]",
+                      open || filled
+                        ? "bg-(--accent)/15 text-(--accent)"
+                        : "bg-(--surface-2) text-(--foreground-muted)"
+                    )}
+                  >
+                    <Icon size={14} />
+                    {chip.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {field === "nota" && (
+              <Input
+                autoFocus
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="¿De qué fue?"
+                maxLength={200}
+              />
+            )}
+            {field === "fecha" && (
+              <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            )}
+
             <div className="min-h-[68px] text-center">
               {hasOperation(expression) && (
                 <p className="animate-fade mb-1 text-[15px] tabular-nums text-(--foreground-muted)">
@@ -237,8 +316,9 @@ export function CaptureSheet({
               Más detalles
             </button>
 
-            {/* Plegado por defecto: casi toda captura es de hoy, y la cuenta suele
-                repetirse, así que pedirlas siempre solo añade toques. */}
+            {/* Plegado por defecto: la cuenta suele repetirse, así que pedirla
+                siempre solo añade toques. La fecha y la nota ya se ajustan con
+                los chips del teclado. */}
             <div className={cn("flex flex-col gap-3", !showDetails && "hidden")}>
               <Field>
                 Cuenta
@@ -254,36 +334,26 @@ export function CaptureSheet({
                   ))}
                 </Select>
               </Field>
-
-              <Field>
-                Fecha
-                <Input type="date" name="date" defaultValue={todayValue()} />
-              </Field>
-
-              <Field>
-                Descripción
-                <Input name="description" placeholder="Opcional" maxLength={200} />
-              </Field>
             </div>
-
-            {!showDetails && <input type="hidden" name="date" value={todayValue()} />}
 
             {state.error && (
               <p className="text-[13px] text-(--danger)">{state.error}</p>
             )}
 
-            <Button type="submit" disabled={!ready || pending}>
-              {pending ? (
-                "Guardando…"
-              ) : (
-                <span className="flex items-center justify-center gap-1.5">
-                  <Check size={16} />
-                  {ready && total !== null
-                    ? `Guardar ${formatCurrency(total)}`
-                    : "Elige una categoría"}
-                </span>
-              )}
-            </Button>
+            <SwipeToConfirm
+              label={
+                ready && total !== null
+                  ? `Desliza para guardar ${formatCurrency(total)}`
+                  : "Elige una categoría"
+              }
+              confirmingLabel="Guardando…"
+              disabled={!ready}
+              pending={pending}
+              // El formulario se envía a mano porque el deslizador no es un
+              // submit: así la acción del servidor y su useActionState siguen
+              // siendo los mismos que antes.
+              onConfirm={() => form.current?.requestSubmit()}
+            />
           </>
         )}
       </form>

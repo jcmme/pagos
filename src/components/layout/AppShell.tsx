@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { MoreHorizontal, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logoutAction } from "@/app/(app)/actions";
 import { CaptureFab } from "@/components/capture/CaptureFab";
+import { ControlHub } from "./ControlHub";
 import type { QuickCaptureData } from "@/modules/transactions/quick-data";
 import { NAV_ITEMS, PRIMARY_HREFS } from "./nav";
 
@@ -24,6 +26,9 @@ export function AppShell({
   captureData: QuickCaptureData;
 }) {
   const pathname = usePathname();
+  // El botón + se retira mientras el buscador está abierto: es la forma de
+  // que dos controles flotantes no compitan por la misma esquina.
+  const [searching, setSearching] = useState(false);
 
   return (
     <div className="flex min-h-screen w-full">
@@ -73,7 +78,9 @@ export function AppShell({
         </div>
       </main>
 
-      <CaptureFab data={captureData} />
+      <CaptureFab data={captureData} hidden={searching} />
+
+      <ControlHub onExpandedChange={setSearching} />
 
       <nav className="glass fixed inset-x-0 bottom-0 z-40 flex justify-around px-2 py-2 md:hidden">
         {MOBILE_ITEMS.map((item) => {
