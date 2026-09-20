@@ -19,6 +19,8 @@ type Row = {
     parent: { name: string } | null;
   };
   budget: { id: string; amount: string } | null;
+  /** El límite ya resuelto, con el ajuste del mes sumado. null = en pausa. */
+  limit: number | null;
   spent: number;
 };
 
@@ -26,8 +28,10 @@ const initialState: ActionState = { error: null };
 
 function BudgetRow({ row, month, year }: { row: Row; month: number; year: number }) {
   const [state, formAction, pending] = useActionState(upsertBudget, initialState);
-  const budgetAmount = row.budget ? Number(row.budget.amount) : 0;
-  const over = row.budget ? row.spent > budgetAmount : false;
+  // El límite viene resuelto del servidor: no se lee el monto crudo, que con un
+  // ajuste del mes ya no sería el límite real.
+  const limit = row.limit;
+  const over = limit !== null && row.spent > limit;
 
   return (
     <Card className="p-4">
@@ -42,11 +46,13 @@ function BudgetRow({ row, month, year }: { row: Row; month: number; year: number
           </p>
         </div>
         <p className={`text-[13px] ${over ? "text-(--danger)" : "text-(--foreground-muted)"}`}>
-          {formatCurrency(row.spent)} {row.budget && `/ ${formatCurrency(budgetAmount)}`}
+          {formatCurrency(row.spent)} {limit !== null && `/ ${formatCurrency(limit)}`}
         </p>
       </div>
 
-      {row.budget && <ProgressBar value={row.spent} max={budgetAmount} className="mb-3" />}
+      {limit !== null && limit > 0 && (
+        <ProgressBar value={row.spent} max={limit} className="mb-3" />
+      )}
 
       <form action={formAction} className="flex items-center gap-2">
         <input type="hidden" name="categoryId" value={row.category.id} />
@@ -59,16 +65,18 @@ function BudgetRow({ row, month, year }: { row: Row; month: number; year: number
           min="0.01"
           defaultValue={row.budget?.amount}
           placeholder="Límite mensual"
-          className="flex-1"
+          // Sin min-w-0 el campo no baja de su ancho por omisión (unas veinte
+          // letras) y empuja el botón de borrar fuera de la pantalla.
+          className="min-w-0 flex-1"
         />
-        <Button type="submit" variant="secondary" disabled={pending}>
+        <Button type="submit" variant="secondary" className="shrink-0" disabled={pending}>
           {pending ? "…" : row.budget ? "Actualizar" : "Definir"}
         </Button>
         {row.budget && (
           <button
             type="button"
             onClick={() => deleteBudget(row.budget!.id)}
-            className="rounded-full p-2 text-(--foreground-subtle) hover:bg-(--surface-2) hover:text-(--danger)"
+            className="shrink-0 rounded-full p-2 text-(--foreground-subtle) hover:bg-(--surface-2) hover:text-(--danger)"
             aria-label="Eliminar presupuesto"
           >
             <Trash2 size={ICON.sm} />

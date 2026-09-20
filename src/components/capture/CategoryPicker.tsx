@@ -72,7 +72,10 @@ export function CategoryPicker({
       <div className="grid grid-cols-3 gap-2">
         {visible.map((category, index) => {
           const budget = budgetOf(category.id);
-          const remaining = budget ? budget.limit - budget.spent : null;
+          // Con el límite en pausa —un porcentaje sin ingreso capturado— no se
+          // dice nada: inventar "queda $0" sería peor que no decir nada.
+          const remaining =
+            budget && budget.limit !== null ? budget.limit - budget.spent : null;
 
           return (
             <button

@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { toNumber } from "@/lib/utils";
 import { HEALTH_TARGETS, HEALTH_WEIGHTS } from "@/lib/constants";
 import { getAccountsWithBalances, liquidBalance } from "@/modules/accounts/balance";
+import { getBudgetContext } from "@/modules/budgets/context";
+import { resolveBudgets } from "@/modules/budgets/limit";
 import { clampScore, unavailable, type Metric } from "./types";
 
 export type HealthReport = {
@@ -38,47 +40,56 @@ export async function getHealthReport(
   const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
   const nextMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
 
-  const [accounts, history, monthTotals, debts, budgets, monthByCategory, essentialCategories] =
-    await Promise.all([
-      getAccountsWithBalances(userId),
-      // Las transferencias nunca cuentan como gasto ni ingreso: solo mueven
-      // dinero entre cuentas propias.
-      prisma.transaction.groupBy({
-        by: ["kind"],
-        where: {
-          userId,
-          date: { gte: since, lt: nextMonth },
-          excludeFromStats: false,
-          kind: { in: ["EXPENSE", "INCOME"] },
-        },
-        _sum: { amount: true },
-      }),
-      prisma.transaction.groupBy({
-        by: ["kind"],
-        where: {
-          userId,
-          date: { gte: monthStart, lt: nextMonth },
-          excludeFromStats: false,
-          kind: { in: ["EXPENSE", "INCOME"] },
-        },
-        _sum: { amount: true },
-      }),
-      prisma.debt.findMany({ where: { userId }, include: { payments: true } }),
-      prisma.budget.findMany({
-        where: { userId, month: now.getUTCMonth() + 1, year: now.getUTCFullYear() },
-      }),
-      prisma.transaction.groupBy({
-        by: ["categoryId"],
-        where: {
-          userId,
-          date: { gte: monthStart, lt: nextMonth },
-          kind: "EXPENSE",
-          excludeFromStats: false,
-        },
-        _sum: { amount: true },
-      }),
-      prisma.category.findMany({ where: { essential: true }, select: { id: true } }),
-    ]);
+  const [
+    accounts,
+    history,
+    monthTotals,
+    debts,
+    budgets,
+    monthByCategory,
+    essentialCategories,
+    context,
+  ] = await Promise.all([
+    getAccountsWithBalances(userId),
+    // Las transferencias nunca cuentan como gasto ni ingreso: solo mueven
+    // dinero entre cuentas propias.
+    prisma.transaction.groupBy({
+      by: ["kind"],
+      where: {
+        userId,
+        date: { gte: since, lt: nextMonth },
+        excludeFromStats: false,
+        kind: { in: ["EXPENSE", "INCOME"] },
+      },
+      _sum: { amount: true },
+    }),
+    prisma.transaction.groupBy({
+      by: ["kind"],
+      where: {
+        userId,
+        date: { gte: monthStart, lt: nextMonth },
+        excludeFromStats: false,
+        kind: { in: ["EXPENSE", "INCOME"] },
+      },
+      _sum: { amount: true },
+    }),
+    prisma.debt.findMany({ where: { userId }, include: { payments: true } }),
+    prisma.budget.findMany({
+      where: { userId, month: now.getUTCMonth() + 1, year: now.getUTCFullYear() },
+    }),
+    prisma.transaction.groupBy({
+      by: ["categoryId"],
+      where: {
+        userId,
+        date: { gte: monthStart, lt: nextMonth },
+        kind: "EXPENSE",
+        excludeFromStats: false,
+      },
+      _sum: { amount: true },
+    }),
+    prisma.category.findMany({ where: { essential: true }, select: { id: true } }),
+    getBudgetContext(userId, now.getUTCMonth() + 1, now.getUTCFullYear()),
+  ]);
 
   const transactionCount = await prisma.transaction.count({
     where: { userId, date: { gte: since, lt: nextMonth }, excludeFromStats: false },
@@ -172,19 +183,32 @@ export async function getHealthReport(
   const spentByCategory = new Map(
     monthByCategory.map((row) => [row.categoryId, toNumber(row._sum.amount ?? 0)])
   );
-  const withinBudget = budgets.filter(
-    (budget) => (spentByCategory.get(budget.categoryId) ?? 0) <= toNumber(budget.amount)
+  // Solo entran los presupuestos con límite resuelto. Un porcentaje sin el
+  // ingreso del mes capturado vale null, y contarlo como cero daría todos por
+  // rebasados: el score se desplomaría por un dato que falta, no por un gasto.
+  const limits = resolveBudgets(budgets, context.income, context.savingsCategoryId);
+  const measurable = budgets.flatMap((budget) => {
+    const limit = limits.get(budget.categoryId) ?? null;
+    return limit === null ? [] : [{ categoryId: budget.categoryId, limit }];
+  });
+  const withinBudget = measurable.filter(
+    (budget) => (spentByCategory.get(budget.categoryId) ?? 0) <= budget.limit
   ).length;
 
   const budgetAdherence: Metric =
-    budgets.length > 0
+    measurable.length > 0
       ? {
           available: true,
-          value: withinBudget / budgets.length,
+          value: withinBudget / measurable.length,
           target: 1,
-          score: clampScore((withinBudget / budgets.length) * 100),
+          score: clampScore((withinBudget / measurable.length) * 100),
         }
-      : unavailable("Define presupuestos por categoría para medir tu disciplina.", 1);
+      : unavailable(
+          budgets.length > 0
+            ? "Captura tu ingreso del mes para medir tus presupuestos por porcentaje."
+            : "Define presupuestos por categoría para medir tu disciplina.",
+          1
+        );
 
   // --- Score compuesto ------------------------------------------------------
   const pillars: Array<[Metric, number]> = [

@@ -59,8 +59,12 @@ export function AppShell({
           cambia su altura o el área segura del teléfono, el contenido se
           ajusta solo. Arriba, viewportFit: "cover" mete la página bajo la
           barra de estado, así que también hay que apartarse de ella. */}
+      {/* min-w-0 no es adorno: main es un hijo de flex, y sin él no baja del
+          ancho de su contenido. Cualquier elemento ancho de dentro —una fila de
+          botones, una tabla— ensancha la página entera y el teléfono se va de
+          lado. */}
       <main
-        className="flex-1"
+        className="min-w-0 flex-1"
         style={{
           paddingTop: "env(safe-area-inset-top, 0px)",
           paddingBottom: "calc(var(--dock-bottom) + var(--dock-height) + 1rem)",

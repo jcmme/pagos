@@ -3,7 +3,16 @@
 //
 // `essential` marca los gastos indispensables, que son la base del cálculo de
 // meses de fondo de emergencia.
-export const DEFAULT_CATEGORIES = [
+type DefaultCategory = {
+  name: string;
+  color: string;
+  essential: boolean;
+  /** Solo Ahorro la lleva: es la categoría donde cae lo que no se reparte. */
+  savings?: boolean;
+  children: string[];
+};
+
+export const DEFAULT_CATEGORIES: DefaultCategory[] = [
   {
     name: "Comida",
     color: "#d15c56",
@@ -45,6 +54,16 @@ export const DEFAULT_CATEGORIES = [
     color: "#409d48",
     essential: false,
     children: ["Sueldo", "Extras"],
+  },
+  // Ahorro es la única con `savings`: es donde cae lo que no repartas al
+  // asignar porcentajes. La marca va en la base y no en el nombre, para que
+  // renombrarla no rompa el cálculo.
+  {
+    name: "Ahorro",
+    color: "#0f8a7e",
+    essential: false,
+    savings: true,
+    children: [],
   },
   { name: "Otros", color: "#a1a1a6", essential: false, children: [] },
 ];

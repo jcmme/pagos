@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { toNumber, formatCurrency } from "@/lib/utils";
 import { monthRange, shiftMonth, MONTH_NAMES } from "@/lib/dates";
+import { getBudgetContext } from "@/modules/budgets/context";
+import { resolveBudgets } from "@/modules/budgets/limit";
 
 export type Insight = {
   /** Estable entre ejecuciones para poder descartarlo permanentemente. */
@@ -25,36 +27,44 @@ export async function generateInsights(
   const prev = shiftMonth(month, year, -1);
   const previous = monthRange(prev.year, prev.month);
 
-  const [currentByCategory, previousByCategory, categories, budgets, subscriptions, dismissed] =
-    await Promise.all([
-      prisma.transaction.groupBy({
-        by: ["categoryId"],
-        where: {
-          userId,
-          kind: "EXPENSE",
-          excludeFromStats: false,
-          date: { gte: current.start, lt: current.end },
-        },
-        _sum: { amount: true },
-      }),
-      prisma.transaction.groupBy({
-        by: ["categoryId"],
-        where: {
-          userId,
-          kind: "EXPENSE",
-          excludeFromStats: false,
-          date: { gte: previous.start, lt: previous.end },
-        },
-        _sum: { amount: true },
-      }),
-      prisma.category.findMany({ select: { id: true, name: true } }),
-      prisma.budget.findMany({
-        where: { userId, month, year },
-        include: { category: true },
-      }),
-      prisma.subscription.findMany({ where: { userId, status: "DETECTED" } }),
-      prisma.insightDismissal.findMany({ where: { userId }, select: { key: true } }),
-    ]);
+  const [
+    currentByCategory,
+    previousByCategory,
+    categories,
+    budgets,
+    subscriptions,
+    dismissed,
+    context,
+  ] = await Promise.all([
+    prisma.transaction.groupBy({
+      by: ["categoryId"],
+      where: {
+        userId,
+        kind: "EXPENSE",
+        excludeFromStats: false,
+        date: { gte: current.start, lt: current.end },
+      },
+      _sum: { amount: true },
+    }),
+    prisma.transaction.groupBy({
+      by: ["categoryId"],
+      where: {
+        userId,
+        kind: "EXPENSE",
+        excludeFromStats: false,
+        date: { gte: previous.start, lt: previous.end },
+      },
+      _sum: { amount: true },
+    }),
+    prisma.category.findMany({ select: { id: true, name: true } }),
+    prisma.budget.findMany({
+      where: { userId, month, year },
+      include: { category: true },
+    }),
+    prisma.subscription.findMany({ where: { userId, status: "DETECTED" } }),
+    prisma.insightDismissal.findMany({ where: { userId }, select: { key: true } }),
+    getBudgetContext(userId, month, year),
+  ]);
 
   const dismissedKeys = new Set(dismissed.map((row) => row.key));
   const names = new Map(categories.map((category) => [category.id, category.name]));
@@ -101,10 +111,16 @@ export async function generateInsights(
   const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
   const monthProgress = now.getUTCDate() / daysInMonth;
 
+  // Los límites se resuelven juntos: uno por porcentaje depende del ingreso del
+  // mes, y el de ahorro de lo que sumen los demás. Si falta el ingreso el
+  // límite es null y ese presupuesto no genera avisos, en vez de avisar de un
+  // rebase inventado contra cero.
+  const limits = resolveBudgets(budgets, context.income, context.savingsCategoryId);
+
   for (const budget of budgets) {
     const spent = currentTotals.get(budget.categoryId) ?? 0;
-    const limit = toNumber(budget.amount);
-    if (limit <= 0) continue;
+    const limit = limits.get(budget.categoryId) ?? null;
+    if (limit === null || limit <= 0) continue;
     const used = spent / limit;
 
     if (used >= 1) {

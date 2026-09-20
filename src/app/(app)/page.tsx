@@ -13,6 +13,8 @@ import { generateInsights } from "@/modules/insights/generate";
 import { getMonthlyTotals } from "@/lib/metrics/monthly";
 import { getWeekTotals } from "@/lib/metrics/daily";
 import { getAccountsWithBalances } from "@/modules/accounts/balance";
+import { getBudgetContext } from "@/modules/budgets/context";
+import { resolveBudgets } from "@/modules/budgets/limit";
 import { nextMonthlyDate } from "@/modules/reminders/schedule";
 import { CategoryChart } from "./CategoryChart";
 import { AccountCarousel } from "./AccountCarousel";
@@ -43,8 +45,18 @@ export default async function DashboardPage() {
   const { month, year } = currentMonthYear();
   const { start, end } = monthRange(year, month);
 
-  const [payments, expenses, budgets, health, available, insights, monthly, week, accounts] =
-    await Promise.all([
+  const [
+    payments,
+    expenses,
+    budgets,
+    health,
+    available,
+    insights,
+    monthly,
+    week,
+    accounts,
+    context,
+  ] = await Promise.all([
     prisma.fixedPayment.findMany({
       where: { userId, active: true, kind: "EXPENSE" },
       include: { category: true },
@@ -65,6 +77,7 @@ export default async function DashboardPage() {
     getMonthlyTotals(userId),
     getWeekTotals(userId),
     getAccountsWithBalances(userId),
+    getBudgetContext(userId, month, year),
   ]);
 
   // El calendario solo necesita las tarjetas, que salen del mismo listado en
@@ -73,7 +86,13 @@ export default async function DashboardPage() {
   const cards = activeAccounts.filter((account) => account.type === "CREDIT_CARD");
 
   const totalSpent = expenses.reduce((sum, expense) => sum + toNumber(expense.amount), 0);
-  const totalBudget = budgets.reduce((sum, budget) => sum + toNumber(budget.amount), 0);
+  // Los presupuestos por porcentaje solo suman si hay ingreso capturado: con
+  // null el mes se queda sin píldora de presupuesto en vez de mostrar 0%.
+  const limits = resolveBudgets(budgets, context.income, context.savingsCategoryId);
+  const totalBudget = budgets.reduce(
+    (sum, budget) => sum + (limits.get(budget.categoryId) ?? 0),
+    0
+  );
 
   const upcoming = payments
     .map((payment) => ({ payment, days: daysUntil(computeNextDueDate(payment)) }))

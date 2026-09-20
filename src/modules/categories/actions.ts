@@ -147,6 +147,32 @@ async function collectDescendants(categoryId: string): Promise<Set<string>> {
   return found;
 }
 
+/**
+ * Marca qué categoría se queda con lo que no se reparte al asignar
+ * porcentajes. Solo puede haber una, así que marcar una desmarca las demás en
+ * la misma transacción: dos marcadas harían que el sobrante se contara doble.
+ */
+export async function setSavingsCategory(id: string) {
+  const category = await prisma.category.findUnique({
+    where: { id },
+    select: { parentId: true },
+  });
+  // El reparto por porcentaje es de las raíces: una subcategoría no puede
+  // quedarse con el sobrante del mes.
+  if (!category || category.parentId) return;
+
+  await prisma.$transaction([
+    prisma.category.updateMany({
+      where: { savings: true, id: { not: id } },
+      data: { savings: false },
+    }),
+    prisma.category.update({ where: { id }, data: { savings: true } }),
+  ]);
+
+  revalidateAll();
+  revalidatePath("/presupuestos");
+}
+
 export async function deleteCategory(id: string) {
   // onDelete: Restrict impide borrar una categoría que tenga descendientes, y
   // con tres niveles ya no basta con borrar las hijas directas.

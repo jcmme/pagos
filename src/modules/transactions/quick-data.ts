@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { toNumber } from "@/lib/utils";
 import { currentMonthYear, monthRange } from "@/lib/dates";
+import { getBudgetContext } from "@/modules/budgets/context";
+import { resolveBudgets } from "@/modules/budgets/limit";
 
 export type QuickCategory = {
   id: string;
@@ -23,7 +25,10 @@ export type QuickShortcut = {
   uses: number;
 };
 
-export type BudgetStatus = { categoryId: string; limit: number; spent: number };
+// El límite puede estar en pausa: un presupuesto por porcentaje sin el ingreso
+// del mes capturado no tiene monto. `null` y no 0, para que la barra se esconda
+// en vez de pintarse llena.
+export type BudgetStatus = { categoryId: string; limit: number | null; spent: number };
 
 export type QuickCaptureData = {
   categories: QuickCategory[];
@@ -40,7 +45,7 @@ export async function getQuickCaptureData(userId: string): Promise<QuickCaptureD
   const { start, end } = monthRange(year, month);
   const since = new Date(Date.now() - SHORTCUT_LOOKBACK_DAYS * 86_400_000);
 
-  const [categories, accounts, recent, budgets, spentByCategory] = await Promise.all([
+  const [categories, accounts, recent, budgets, spentByCategory, context] = await Promise.all([
     prisma.category.findMany({
       where: { archived: false },
       select: { id: true, name: true, color: true, icon: true, parentId: true },
@@ -74,6 +79,7 @@ export async function getQuickCaptureData(userId: string): Promise<QuickCaptureD
       },
       _sum: { amount: true },
     }),
+    getBudgetContext(userId, month, year),
   ]);
 
   const categoryById = new Map(categories.map((category) => [category.id, category]));
@@ -81,6 +87,7 @@ export async function getQuickCaptureData(userId: string): Promise<QuickCaptureD
   const spent = new Map(
     spentByCategory.map((row) => [row.categoryId, toNumber(row._sum.amount ?? 0)])
   );
+  const limits = resolveBudgets(budgets, context.income, context.savingsCategoryId);
 
   return {
     categories,
@@ -102,7 +109,7 @@ export async function getQuickCaptureData(userId: string): Promise<QuickCaptureD
     }),
     budgets: budgets.map((budget) => ({
       categoryId: budget.categoryId,
-      limit: toNumber(budget.amount),
+      limit: limits.get(budget.categoryId) ?? null,
       spent: spent.get(budget.categoryId) ?? 0,
     })),
   };

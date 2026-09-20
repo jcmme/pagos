@@ -11,6 +11,13 @@ enum UserRole {
   MEMBER
 }
 
+// Cómo se sabe con cuánto dinero cuenta la persona cada mes. Son excluyentes a
+// propósito: o hay un sueldo base que vale siempre, o cada mes se captura.
+enum IncomeMode {
+  FIJO
+  VARIABLE
+}
+
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
@@ -22,6 +29,12 @@ model User {
   active       Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt @default(now())
+
+  // El reparto por porcentajes necesita saber sobre cuánto repartir. En modo
+  // FIJO basta monthlyIncome; en VARIABLE cada mes trae su fila de
+  // MonthlyIncome, y un mes sin capturar no se calcula.
+  incomeMode    IncomeMode @default(VARIABLE)
+  monthlyIncome Decimal?   @db.Decimal(12, 2)
 
   pushSubscriptions PushSubscription[]
 
@@ -37,6 +50,24 @@ model User {
   subscriptions Subscription[]
   dismissals    InsightDismissal[]
   reminders     ReminderSent[]
+  incomes       MonthlyIncome[]
+}
+
+// Lo que hay para gastar en un mes concreto. Existe porque el sueldo cambia:
+// un mes son 24,000 y el siguiente 11,500. Una fila explícita le gana siempre
+// al sueldo base, así que también sirve para el mes del aguinaldo.
+model MonthlyIncome {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  month  Int
+  year   Int
+  amount Decimal @db.Decimal(12, 2)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, month, year])
 }
 
 model Category {
@@ -50,6 +81,9 @@ model Category {
   // Marca los gastos indispensables (renta, servicios, comida): son la base
   // del cálculo de meses de fondo de emergencia.
   essential Boolean  @default(false)
+  // La categoría donde cae lo que no se reparte. Es una marca y no un nombre
+  // porque cualquiera puede renombrar "Ahorro". Solo una la lleva.
+  savings   Boolean  @default(false)
   archived  Boolean  @default(false)
   sortOrder Int      @default(0)
   createdAt DateTime @default(now())
@@ -430,7 +464,15 @@ model Budget {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   categoryId String
   category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  amount     Decimal  @db.Decimal(12, 2)
+  // Un presupuesto se define de una de dos maneras, nunca de las dos: un monto
+  // fijo, o un porcentaje del ingreso del mes. Lo impone un CHECK en la base,
+  // además de zod, porque es la regla que sostiene todo el cálculo.
+  amount     Decimal? @db.Decimal(12, 2)
+  percent    Decimal? @db.Decimal(5, 2)
+  // Corrección del mes: los traspasos entre categorías rebasadas escriben aquí
+  // (−E en la de origen, +E en la rebasada), así que los ajustes de un mes
+  // suman cero.
+  adjustment Decimal  @default(0) @db.Decimal(12, 2)
   month      Int
   year       Int
   createdAt  DateTime @default(now())

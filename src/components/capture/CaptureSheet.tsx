@@ -16,6 +16,10 @@ import { Button } from "@/components/ui/Button";
 import { SwipeToConfirm } from "@/components/ui/SwipeToConfirm";
 import { Field, Input, Select } from "@/components/ui/Input";
 import { ProgressBar } from "@/components/ui/ProgressBar";
+import {
+  SegmentedToggle,
+  type SegmentedOption,
+} from "@/components/ui/SegmentedToggle";
 import { cn, formatCurrency } from "@/lib/utils";
 import { createQuickTransaction } from "@/modules/transactions/actions";
 import {
@@ -43,6 +47,11 @@ function todayValue() {
 const CHIPS: { id: "nota" | "fecha"; label: string; icon: LucideIcon }[] = [
   { id: "nota", label: "Nota", icon: StickyNote },
   { id: "fecha", label: "Fecha", icon: CalendarDays },
+];
+
+const KIND_OPTIONS: SegmentedOption<"EXPENSE" | "INCOME">[] = [
+  { value: "EXPENSE", label: "Gasto", icon: ArrowUp, tone: "var(--danger)" },
+  { value: "INCOME", label: "Ingreso", icon: ArrowDown, tone: "var(--success)" },
 ];
 
 // Cada apertura monta una instancia nueva (la llave se la pone el botón), así
@@ -213,25 +222,12 @@ export function CaptureSheet({
               </span>
             </button>
 
-            <div className="flex gap-2">
-              {(["EXPENSE", "INCOME"] as const).map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => setKind(option)}
-                  className={cn(
-                    "pressable flex-1 rounded-(--radius-full) px-3 py-1.5 text-[13px] transition-colors",
-                    kind === option
-                      ? option === "EXPENSE"
-                        ? "bg-(--danger)/15 text-(--danger)"
-                        : "bg-(--success)/15 text-(--success)"
-                      : "bg-(--surface-2) text-(--foreground-muted)"
-                  )}
-                >
-                  {option === "EXPENSE" ? "Gasto" : "Ingreso"}
-                </button>
-              ))}
-            </div>
+            <SegmentedToggle
+              label="Tipo de movimiento"
+              value={kind}
+              onChange={setKind}
+              options={KIND_OPTIONS}
+            />
 
             {/* Los atajos solo aparecen antes de elegir: después estorban. */}
             {!category && data.shortcuts.length > 0 && (
@@ -288,7 +284,7 @@ export function CaptureSheet({
               />
             )}
 
-            {budget && (
+            {budget && budget.limit !== null && (
               <div>
                 <div className="mb-1 flex justify-between text-[12px] text-(--foreground-muted)">
                   <span>Presupuesto del mes</span>

@@ -88,6 +88,19 @@ export async function seedCategories(prisma: PrismaClient): Promise<number> {
     }
   }
 
+  // La marca de ahorro solo se pone si no hay ninguna: si la persona la movió
+  // a otra categoría, resembrar no debe devolverla a "Ahorro".
+  const marked = await prisma.category.count({ where: { savings: true } });
+  if (marked === 0) {
+    const fallback = DEFAULT_CATEGORIES.find((category) => category.savings);
+    const target = fallback
+      ? await prisma.category.findFirst({ where: { name: fallback.name, parentId: null } })
+      : null;
+    if (target) {
+      await prisma.category.update({ where: { id: target.id }, data: { savings: true } });
+    }
+  }
+
   // Las categorías que creó el usuario también merecen icono. Solo se tocan
   // las que no tienen ninguno, y las que no casan con ninguna pista —un
   // nombre propio como "Loreto"— se quedan con su inicial.
