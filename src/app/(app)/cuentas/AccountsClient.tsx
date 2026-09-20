@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { Plus, Pencil, Trash2, Archive } from "lucide-react";
 import { Card, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { SwitchRow } from "@/components/ui/Switch";
 import { Badge } from "@/components/ui/Badge";
 import { Field, Input, Select } from "@/components/ui/Input";
 import { ProgressBar } from "@/components/ui/ProgressBar";
@@ -166,25 +167,18 @@ function AccountForm({
         </Select>
       </Field>
 
-      <label className="flex items-center gap-2 text-[13px] text-(--foreground-muted)">
-        <input
-          type="checkbox"
-          name="liquid"
-          defaultChecked={defaults?.liquid ?? true}
-          className="h-4 w-4 accent-(--accent)"
-        />
-        Disponible de inmediato (cuenta para el fondo de emergencia)
-      </label>
+      <SwitchRow
+        name="liquid"
+        defaultChecked={defaults?.liquid ?? true}
+        label="Disponible de inmediato"
+        hint="Cuenta para el fondo de emergencia."
+      />
 
-      <label className="flex items-center gap-2 text-[13px] text-(--foreground-muted)">
-        <input
-          type="checkbox"
-          name="includeInNetWorth"
-          defaultChecked={defaults?.includeInNetWorth ?? true}
-          className="h-4 w-4 accent-(--accent)"
-        />
-        Incluir en patrimonio neto
-      </label>
+      <SwitchRow
+        name="includeInNetWorth"
+        defaultChecked={defaults?.includeInNetWorth ?? true}
+        label="Incluir en patrimonio neto"
+      />
 
       {state.error && (
         <p className="text-[13px] text-(--danger)">{state.error}</p>

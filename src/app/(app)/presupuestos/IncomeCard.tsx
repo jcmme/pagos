@@ -1,11 +1,11 @@
 "use client";
 
 import { useActionState, useState, useTransition } from "react";
-import { CalendarDays, Landmark, Wallet } from "lucide-react";
+import { Wallet } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Input";
-import { SegmentedToggle, type SegmentedOption } from "@/components/ui/SegmentedToggle";
+import { SwitchRow } from "@/components/ui/Switch";
 import { formatMoneyParts } from "@/lib/money";
 import { ICON } from "@/lib/icons";
 import { MONTH_NAMES } from "@/lib/dates";
@@ -22,13 +22,6 @@ import type { IncomeMode, IncomeSource } from "@/modules/income/resolve";
 // se calcula sobre esta cifra: sin ella, los porcentajes no son dinero.
 
 const initialState: ActionState = { error: null };
-
-// Etiquetas de una palabra: en un teléfono, "Cambia cada mes" no cabe en media
-// pastilla sin partirse ni recortarse.
-const MODES: SegmentedOption<IncomeMode>[] = [
-  { value: "FIJO", label: "Fijo", icon: Landmark },
-  { value: "VARIABLE", label: "Variable", icon: CalendarDays },
-];
 
 export function IncomeCard({
   month,
@@ -98,19 +91,20 @@ export function IncomeCard({
           </p>
         </div>
 
-        <div className="w-full sm:w-auto">
-          <SegmentedToggle
-            label="Cómo llevas tu ingreso"
-            value={shown}
-            onChange={changeMode}
-            options={MODES}
-          />
-          <p className="mt-1 text-[11px] text-(--foreground-subtle) sm:text-right">
-            {shown === "FIJO"
-              ? "El mismo sueldo todos los meses"
-              : "Capturas lo que tienes cada mes"}
-          </p>
-        </div>
+        {/* Encendido: un sueldo para todos los meses. Apagado: cada mes el
+            suyo. Son las dos únicas posturas posibles, y un interruptor dice
+            eso mejor que dos botones. */}
+        <SwitchRow
+          label="Sueldo fijo"
+          hint={
+            shown === "FIJO"
+              ? "El mismo todos los meses"
+              : "Capturas lo que tienes cada mes"
+          }
+          checked={shown === "FIJO"}
+          onChange={(event) => changeMode(event.target.checked ? "FIJO" : "VARIABLE")}
+          className="w-full sm:w-auto sm:gap-4"
+        />
       </div>
 
       {shown === "FIJO" ? (

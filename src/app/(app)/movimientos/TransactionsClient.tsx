@@ -5,6 +5,7 @@ import { Plus, Pencil, Trash2, Download, SlidersHorizontal, Upload } from "lucid
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { SwitchRow } from "@/components/ui/Switch";
 import { Badge } from "@/components/ui/Badge";
 import { Field, Input, Select, Textarea } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
@@ -155,15 +156,12 @@ function TransactionForm({
         <Textarea name="note" rows={2} defaultValue={defaults?.note ?? ""} />
       </Field>
 
-      <label className="flex items-center gap-2 text-[13px] text-(--foreground-muted)">
-        <input
-          type="checkbox"
-          name="excludeFromStats"
-          defaultChecked={defaults?.excludeFromStats}
-          className="h-4 w-4 accent-(--accent)"
-        />
-        Excluir de estadísticas y métricas
-      </label>
+      <SwitchRow
+        name="excludeFromStats"
+        defaultChecked={defaults?.excludeFromStats}
+        label="Excluir de estadísticas"
+        hint="No cuenta en tus métricas ni en tus presupuestos."
+      />
 
       {state.error && <p className="text-[13px] text-(--danger)">{state.error}</p>}
       <Button type="submit" disabled={pending}>

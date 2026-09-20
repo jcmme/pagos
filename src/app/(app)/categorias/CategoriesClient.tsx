@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { Plus, Pencil, Trash2, CornerDownRight, ShieldCheck } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { SwitchRow } from "@/components/ui/Switch";
 import { Badge } from "@/components/ui/Badge";
 import { Field, Input, Select } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
@@ -182,21 +183,12 @@ function CategoryForm({
         />
       </Field>
 
-      <label className="flex items-start gap-2 text-[13px] text-(--foreground-muted)">
-        <input
-          type="checkbox"
-          name="essential"
-          defaultChecked={defaults?.essential}
-          className="mt-0.5 h-4 w-4 accent-(--accent)"
-        />
-        <span>
-          Gasto esencial
-          <span className="block text-[12px] text-(--foreground-subtle)">
-            Los esenciales son la base para calcular cuántos meses aguanta tu fondo de
-            emergencia.
-          </span>
-        </span>
-      </label>
+      <SwitchRow
+        name="essential"
+        defaultChecked={defaults?.essential}
+        label="Gasto esencial"
+        hint="Los esenciales son la base para calcular cuántos meses aguanta tu fondo de emergencia."
+      />
 
       {state.error && <p className="text-[13px] text-(--danger)">{state.error}</p>}
       <Button type="submit" disabled={pending}>
