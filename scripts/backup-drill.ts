@@ -17,6 +17,7 @@
 import { prisma } from "../src/lib/prisma";
 import { buildBackup } from "../src/modules/backup/export";
 import { parseBackup, restoreBackup } from "../src/modules/backup/restore";
+import { seedCategories } from "../src/lib/seed-categories";
 
 const url = process.env.DATABASE_URL ?? "";
 const host = (() => {
@@ -69,6 +70,28 @@ async function snapshot(userId: string) {
       prisma.subscription.findMany({ where: { userId }, orderBy: { id: "asc" } }),
     ]);
 
+  // Una categoría se compara por su nombre completo y no por su id.
+  //
+  // Restaurar sobre una base resembrada reusa a propósito la categoría que ya
+  // está —"Comida" es "Comida" aunque su fila sea otra— y le apunta todo lo del
+  // archivo. El id cambia y el dato no. Comparar ids marcaría como pérdida lo
+  // que en realidad es el comportamiento correcto; comparar la ruta comprueba
+  // lo que de verdad importa: que el movimiento siga en su categoría.
+  const categories = await prisma.category.findMany({
+    select: { id: true, name: true, parentId: true },
+  });
+  const nameById = new Map(categories.map((c) => [c.id, c]));
+  const path = (id: string | null): string | null => {
+    if (id === null) return null;
+    const parts: string[] = [];
+    let cursor = nameById.get(id);
+    while (cursor && parts.length < 10) {
+      parts.unshift(cursor.name);
+      cursor = cursor.parentId ? nameById.get(cursor.parentId) : undefined;
+    }
+    return parts.length ? parts.join(" › ") : `(id perdido: ${id})`;
+  };
+
   // createdAt/updatedAt no se respaldan: son metadatos de la fila —cuándo se
   // escribió—, no del dato. Al restaurar son necesariamente nuevos, así que
   // compararlos haría fallar el simulacro siempre y por algo que a nadie le
@@ -86,7 +109,10 @@ async function snapshot(userId: string) {
       return Object.fromEntries(
         Object.entries(value as Record<string, unknown>)
           .filter(([key]) => key !== "createdAt" && key !== "updatedAt")
-          .map(([key, inner]) => [key, strip(inner)])
+          .map(([key, inner]) => [
+            key,
+            key === "categoryId" ? path(inner as string | null) : strip(inner),
+          ])
       );
     }
     return value;
@@ -135,7 +161,20 @@ async function main() {
   if (empty.transactions.length !== 0 || empty.accounts.length !== 0) {
     throw new Error("El borrado no dejó la base vacía; el simulacro no probaría nada.");
   }
-  console.log(`  Desastre:   base vacía (0 movimientos, 0 cuentas)`);
+
+  // Reconstruir como se reconstruiría de verdad: quien pierde la base corre las
+  // migraciones y el seed, y hasta ahí llega antes de restaurar. Eso deja las
+  // categorías por defecto puestas, con ids nuevos y los mismos nombres que
+  // trae el archivo.
+  //
+  // Esto no estaba en la primera versión del simulacro —restauraba sobre una
+  // base pelada— y por eso no vio que el nombre de una categoría es único por
+  // nivel: restaurar sobre una base recién sembrada reventaba contra
+  // `Category_root_name_key`, que es exactamente el único escenario en el que
+  // alguien restaura.
+  await seedCategories(prisma);
+  const sembrada = await prisma.category.count();
+  console.log(`  Desastre:   base vacía, resembrada con ${sembrada} categorías por defecto`);
 
   // 3. Volver desde el archivo, validándolo como si lo hubiera subido alguien.
   const report = await restoreBackup(user.id, parseBackup(JSON.parse(file)));

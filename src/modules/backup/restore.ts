@@ -279,12 +279,41 @@ export async function restoreBackup(
         },
       });
 
+      // El nombre de una categoría es único por nivel, y no por un `@@unique`
+      // del esquema sino por dos índices parciales en SQL crudo
+      // (`Category_root_name_key` y `Category_child_name_key`), porque Postgres
+      // considera distintos entre sí los NULL.
+      //
+      // Eso importa justo en el caso para el que existe restaurar: sobre una
+      // base recién levantada, que ya trae las categorías por defecto del seed
+      // con OTROS ids. Insertarlas por id chocaría contra ese índice y tumbaría
+      // la restauración entera. Cuando el nombre ya está tomado se reusa la
+      // categoría que hay y se apunta todo lo del archivo hacia ella.
+      const categoryMap = new Map<string, string>();
+      const resolveCategory = (id: string | null) =>
+        id === null ? null : (categoryMap.get(id) ?? id);
+
       for (const category of byDepth(backup.categories)) {
+        // La madre se resuelve primero: si la madre se reusó, la hija tiene que
+        // colgarse de la que de verdad quedó, no de la del archivo.
+        const parentId = resolveCategory(category.parentId);
+
+        const sameName = await tx.category.findFirst({
+          where: { name: category.name, parentId },
+        });
+
+        if (sameName && sameName.id !== category.id) {
+          categoryMap.set(category.id, sameName.id);
+          warnings.push(`La categoría "${category.name}" ya existía; se reusó.`);
+          continue;
+        }
+
         await tx.category.upsert({
           where: { id: category.id },
-          create: category,
-          update: category,
+          create: { ...category, parentId },
+          update: { ...category, parentId },
         });
+        categoryMap.set(category.id, category.id);
       }
 
       for (const tag of backup.tags) {
@@ -321,7 +350,7 @@ export async function restoreBackup(
           note: row.note,
           merchantKey: row.merchantKey,
           source: row.source,
-          categoryId: row.categoryId,
+          categoryId: resolveCategory(row.categoryId),
           accountId: row.accountId,
           transferAccountId: row.transferAccountId,
           excludeFromStats: row.excludeFromStats,
@@ -347,7 +376,11 @@ export async function restoreBackup(
       }
 
       await tx.fixedPayment.createMany({
-        data: backup.fixedPayments.map((p) => ({ ...p, userId })),
+        data: backup.fixedPayments.map((p) => ({
+          ...p,
+          userId,
+          categoryId: resolveCategory(p.categoryId),
+        })),
       });
 
       await tx.debt.createMany({
@@ -369,7 +402,13 @@ export async function restoreBackup(
         ),
       });
 
-      await tx.budget.createMany({ data: backup.budgets.map((b) => ({ ...b, userId })) });
+      await tx.budget.createMany({
+        data: backup.budgets.map((b) => ({
+          ...b,
+          userId,
+          categoryId: resolveCategory(b.categoryId)!,
+        })),
+      });
 
       await tx.savingsGoal.createMany({
         data: backup.goals.map((goal) => ({
@@ -396,10 +435,11 @@ export async function restoreBackup(
           where: { pattern: rule.pattern, matchType: rule.matchType, id: { not: rule.id } },
         });
         if (clash) continue;
+        const ruleRow = { ...rule, categoryId: resolveCategory(rule.categoryId)! };
         await tx.categoryRule.upsert({
           where: { id: rule.id },
-          create: rule,
-          update: rule,
+          create: ruleRow,
+          update: ruleRow,
         });
       }
 
