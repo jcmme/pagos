@@ -5,7 +5,14 @@ export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
       className={cn(
-        "rounded-(--radius-lg) border border-(--border) bg-(--surface) p-5 shadow-[0_1px_0_rgba(255,255,255,0.04)_inset]",
+        // Material translúcido sobre el ambiente, no un gris opaco: cada
+        // tarjeta toma algo del color que tiene detrás. El borde superior más
+        // claro es la luz dando en el canto, que es lo que hace que se lea
+        // como una lámina y no como un rectángulo semitransparente.
+        "rounded-(--radius-lg) border border-(--border) border-t-(--edge-light)",
+        "bg-(--surface-glass) p-5 shadow-(--elevation-card)",
+        // Encima del ambiente, que va en z-0.
+        "relative z-1",
         className
       )}
       {...props}

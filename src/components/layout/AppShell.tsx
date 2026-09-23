@@ -63,8 +63,46 @@ export function AppShell({
           ancho de su contenido. Cualquier elemento ancho de dentro —una fila de
           botones, una tabla— ensancha la página entera y el teléfono se va de
           lado. */}
+      {/* El ambiente. Tres manchas de color detrás de todo, de las que viven
+          las tarjetas translúcidas. Es un elemento suelto y no un fondo del
+          contenedor porque tiene que quedarse quieto mientras la página se
+          desplaza: es el cuarto donde está la app, no parte de la página.
+          aria-hidden porque no dice nada. */}
+      <div className="ambient" aria-hidden="true">
+        <span
+          style={{
+            top: "-90px",
+            left: "-60px",
+            width: "300px",
+            height: "300px",
+            background: "#1f4a6d",
+            opacity: 0.85,
+          }}
+        />
+        <span
+          style={{
+            top: "18%",
+            right: "-80px",
+            width: "260px",
+            height: "260px",
+            background: "#5d3560",
+            opacity: 0.8,
+          }}
+        />
+        <span
+          style={{
+            bottom: "6%",
+            left: "10%",
+            width: "240px",
+            height: "240px",
+            background: "#1d4b3a",
+            opacity: 0.6,
+          }}
+        />
+      </div>
+
       <main
-        className="min-w-0 flex-1"
+        className="relative z-1 min-w-0 flex-1"
         style={{
           paddingTop: "env(safe-area-inset-top, 0px)",
           paddingBottom: "calc(var(--dock-bottom) + var(--dock-height) + 1rem)",

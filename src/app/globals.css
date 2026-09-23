@@ -3,16 +3,47 @@
 :root {
   color-scheme: dark;
 
-  --background: #000000;
+  /* El fondo deja de ser negro puro para que las manchas de color del ambiente
+     tengan dónde leerse. Sigue siendo casi negro: en OLED el ahorro de
+     batería es prácticamente el mismo y la app no pierde sobriedad. */
+  --background: #0b0b0d;
   --surface: #1c1c1e;
+
+  /* El material de una tarjeta: blanco a muy baja opacidad sobre el ambiente,
+     no un gris opaco. Así cada tarjeta toma algo del color que tiene detrás y
+     la pantalla deja de ser una pila de rectángulos iguales.
+
+     Deliberadamente SIN backdrop-filter. El ambiente de detrás ya está
+     desenfocado y no se mueve, así que desenfocarlo otra vez no cambia nada
+     que se vea, y en un teléfono cada capa de desenfoque cuesta batería y
+     fotogramas. El material de verdad se reserva para lo que flota sobre el
+     contenido —el dock y las hojas—, que es donde Apple lo usa. */
+  --surface-glass: rgba(255, 255, 255, 0.07);
+  --surface-glass-strong: rgba(255, 255, 255, 0.10);
   --surface-2: #2c2c2e;
   --surface-3: #3a3a3c;
   --border: rgba(255, 255, 255, 0.08);
   --border-strong: rgba(255, 255, 255, 0.14);
+  /* El borde superior claro es la luz dando en el canto del material. Es lo
+     que hace que una superficie translúcida se lea como una lámina y no como
+     un rectángulo semitransparente. */
+  --edge-light: rgba(255, 255, 255, 0.16);
+
+  /* Una superficie más grande se lee como más gruesa: sombra más profunda. */
+  --elevation-card: 0 2px 12px rgba(0, 0, 0, 0.30);
+  --elevation-float: 0 8px 32px rgba(0, 0, 0, 0.45);
 
   --foreground: #f5f5f7;
-  --foreground-muted: #a1a1a6;
-  --foreground-subtle: #6e6e73;
+  /* Los dos grises de apoyo suben de luminosidad.
+     Sobre una superficie translúcida el texto gris plano deja de leerse:
+     medido, `#6e6e73` daba 2.41:1 sobre la tarjeta encima de la mancha azul,
+     muy por debajo del 4.5:1 que hace falta. Y no era culpa del ambiente:
+     sobre la tarjeta opaca de antes ya daba 3.36:1, así que llevaba tiempo
+     sin cumplir. Estos dos valores pasan en los cuatro fondos posibles
+     —sin mancha, azul, morada y verde— conservando los tres escalones de
+     jerarquía. */
+  --foreground-muted: #b6b6bc;
+  --foreground-subtle: #9d9da3;
 
   --accent: #0a84ff;
   --accent-hover: #409cff;
@@ -493,6 +524,41 @@ h3 {
 .stagger > *:nth-child(8) { animation-delay: 280ms; }
 .stagger > *:nth-child(9) { animation-delay: 320ms; }
 .stagger > *:nth-child(n + 10) { animation-delay: 360ms; }
+
+/* El ambiente: tres manchas de color muy desenfocadas detrás de todo.
+   Son la única fuente de color del fondo, y de ellas viven las tarjetas: una
+   superficie translúcida encima toma su tinte, que es lo que separa esto de
+   un fondo plano con rectángulos grises.
+
+   Va `fixed` para que no se desplace con el contenido: el ambiente es el
+   cuarto donde está la app, no parte de la página. Y `pointer-events: none`
+   porque no es nada que se pueda tocar. */
+.ambient {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.ambient span {
+  position: absolute;
+  display: block;
+  border-radius: 50%;
+  /* El desenfoque se aplica una sola vez, aquí, sobre tres elementos que no
+     cambian nunca: el navegador lo puede rasterizar y olvidarse. */
+  filter: blur(80px);
+}
+
+/* Quien pide menos transparencia lo pide porque le cuesta leer sobre ella.
+   El ambiente se apaga y las superficies se vuelven sólidas. */
+@media (prefers-reduced-transparency: reduce) {
+  .ambient { display: none; }
+  :root {
+    --surface-glass: #1c1c1e;
+    --surface-glass-strong: #2c2c2e;
+  }
+}
 
 /* El esqueleto de carga respira en vez de parpadear. Un parpadeo marcado
    llama la atención sobre la espera; una oscilación corta de opacidad dice
