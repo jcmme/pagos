@@ -6,6 +6,13 @@ import { notifyOffsets, nextMonthlyDate, offsetDueToday } from "@/modules/remind
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { sendPaymentReminderEmail } from "@/lib/email";
 import { sendPushToUser } from "@/lib/push";
+import { backupDueToday, sendWeeklyBackups } from "@/modules/backup/schedule";
+
+// Los domingos este cron además arma y manda el respaldo de cada persona, que
+// es leer sus tablas completas. Con los 10s que Vercel da por defecto el
+// respaldo se cortaría justo cuando la base ya tiene años encima, que es
+// cuando más falta hace.
+export const maxDuration = 60;
 
 type Pending = {
   kind: "FIXED_PAYMENT" | "CARD_PAYMENT";
@@ -142,5 +149,10 @@ export async function GET(req: NextRequest) {
     notified += fresh.length;
   }
 
-  return NextResponse.json({ users: users.length, notified, offsets });
+  // El respaldo semanal viaja con este cron; `backupDueToday` decide si hoy
+  // toca. Va al final y aparte: si los respaldos fallan, los recordatorios ya
+  // se mandaron.
+  const backups = backupDueToday(now) ? await sendWeeklyBackups() : null;
+
+  return NextResponse.json({ users: users.length, notified, offsets, backups });
 }

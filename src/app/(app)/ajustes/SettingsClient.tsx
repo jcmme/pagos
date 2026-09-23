@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { UserPlus, ShieldCheck } from "lucide-react";
+import { UserPlus, ShieldCheck, DownloadCloud, RotateCcw } from "lucide-react";
 import { Card, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -14,6 +14,7 @@ import {
   setUserActive,
   type ActionState,
 } from "@/modules/users/actions";
+import { restoreFromFile, type RestoreState } from "@/modules/backup/actions";
 
 const initialState: ActionState = { error: null };
 
@@ -108,14 +109,134 @@ function NewUserForm({ onSuccess }: { onSuccess: () => void }) {
   );
 }
 
+// Lo que el respaldo se lleva, en el orden en que a alguien le importaría
+// perderlo. Se muestra con su cuenta para que descargar no sea un acto de fe:
+// si un renglón dice 0 y no debería, se nota antes de necesitar el archivo.
+const BACKUP_ROWS: { key: keyof BackupCounts; label: string }[] = [
+  { key: "movimientos", label: "Movimientos" },
+  { key: "cuentas", label: "Cuentas" },
+  { key: "pagosFijos", label: "Pagos fijos" },
+  { key: "presupuestos", label: "Presupuestos" },
+  { key: "deudas", label: "Deudas" },
+  { key: "metas", label: "Metas de ahorro" },
+  { key: "categorias", label: "Categorías" },
+  { key: "reglas", label: "Reglas de categorización" },
+];
+
+export type BackupCounts = {
+  movimientos: number;
+  cuentas: number;
+  pagosFijos: number;
+  presupuestos: number;
+  deudas: number;
+  metas: number;
+  categorias: number;
+  reglas: number;
+};
+
+function BackupCard({ counts }: { counts: BackupCounts }) {
+  return (
+    <Card>
+      <CardTitle className="mb-1">Respaldo</CardTitle>
+      <p className="mb-3 text-[12px] text-(--foreground-subtle)">
+        Un archivo con todo lo que has capturado. Guárdalo donde no dependa de
+        esta app: si algún día la base se pierde, es lo único que te devuelve
+        tus presupuestos, deudas y pagos fijos, no solo la lista de gastos.
+      </p>
+
+      <div className="mb-4 flex flex-col gap-1.5">
+        {BACKUP_ROWS.map(({ key, label }) => (
+          <div key={key} className="flex items-baseline justify-between gap-3">
+            <span className="text-[13px] text-(--foreground-muted)">{label}</span>
+            <span className="text-[13px] tabular-nums">{counts[key]}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Descarga directa, sin JavaScript de por medio: el navegador guarda el
+          archivo que manda el servidor. En iOS cae en Archivos, que es donde
+          sirve tenerlo. */}
+      <a href="/api/backup" download>
+        <Button variant="secondary" className="w-full">
+          <DownloadCloud size={ICON.md} /> Descargar respaldo
+        </Button>
+      </a>
+
+      <p className="mt-3 text-[12px] text-(--foreground-subtle)">
+        Cada domingo te llega uno por correo sin que tengas que hacer nada.
+      </p>
+    </Card>
+  );
+}
+
+function RestoreForm({ onDone }: { onDone: () => void }) {
+  const [state, formAction, pending] = useActionState(restoreFromFile, {
+    error: null,
+    restored: null,
+    warnings: [],
+  } as RestoreState);
+
+  if (state.restored) {
+    return (
+      <div className="flex flex-col gap-3">
+        <p className="text-[14px] text-(--success)">Listo. Se restauró:</p>
+        <div className="flex flex-col gap-1">
+          {Object.entries(state.restored)
+            .filter(([, count]) => count > 0)
+            .map(([label, count]) => (
+              <div key={label} className="flex items-baseline justify-between gap-3">
+                <span className="text-[13px] text-(--foreground-muted)">{label}</span>
+                <span className="text-[13px] tabular-nums">{count}</span>
+              </div>
+            ))}
+        </div>
+        {state.warnings.map((warning) => (
+          <p key={warning} className="text-[12px] text-(--foreground-subtle)">
+            {warning}
+          </p>
+        ))}
+        <Button onClick={onDone}>Cerrar</Button>
+      </div>
+    );
+  }
+
+  return (
+    <form action={formAction} className="flex flex-col gap-4">
+      <p className="text-[13px] text-(--foreground-muted)">
+        Esto <strong>reemplaza</strong> todo lo que tienes ahora con lo que traiga
+        el archivo. Lo que hayas capturado después de ese respaldo se pierde.
+      </p>
+
+      <Field>
+        Archivo de respaldo
+        <Input name="archivo" type="file" accept="application/json,.json" required />
+      </Field>
+
+      <Field>
+        Escribe RESTAURAR para confirmar
+        <Input name="confirmacion" required autoComplete="off" placeholder="RESTAURAR" />
+      </Field>
+
+      {state.error && <p className="text-[13px] text-(--danger)">{state.error}</p>}
+
+      <Button type="submit" variant="danger" disabled={pending}>
+        {pending ? "Restaurando…" : "Restaurar"}
+      </Button>
+    </form>
+  );
+}
+
 export function SettingsClient({
   me,
   users,
+  backupCounts,
 }: {
   me: { id: string; email: string; name: string | null; role: "ADMIN" | "MEMBER" };
   users: UserRow[];
+  backupCounts: BackupCounts;
 }) {
   const [creating, setCreating] = useState(false);
+  const [restoring, setRestoring] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   return (
@@ -134,6 +255,19 @@ export function SettingsClient({
       <Card>
         <CardTitle className="mb-3">Cambiar contraseña</CardTitle>
         <PasswordForm />
+      </Card>
+
+      <BackupCard counts={backupCounts} />
+
+      <Card>
+        <CardTitle className="mb-1">Restaurar</CardTitle>
+        <p className="mb-3 text-[12px] text-(--foreground-subtle)">
+          Vuelve al estado de un respaldo. Reemplaza todo lo que tengas ahora,
+          así que solo se usa cuando algo se perdió.
+        </p>
+        <Button variant="secondary" className="w-full" onClick={() => setRestoring(true)}>
+          <RotateCcw size={ICON.md} /> Restaurar desde un archivo
+        </Button>
       </Card>
 
       {me.role === "ADMIN" && (
@@ -187,6 +321,10 @@ export function SettingsClient({
 
       <Modal open={creating} onClose={() => setCreating(false)} title="Nuevo usuario">
         <NewUserForm onSuccess={() => setCreating(false)} />
+      </Modal>
+
+      <Modal open={restoring} onClose={() => setRestoring(false)} title="Restaurar respaldo">
+        <RestoreForm onDone={() => setRestoring(false)} />
       </Modal>
     </div>
   );
