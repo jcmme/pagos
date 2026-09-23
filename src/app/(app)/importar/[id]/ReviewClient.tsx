@@ -107,7 +107,7 @@ export function ReviewClient({
       </div>
 
       {record.error && (
-        <Card className="mb-4 border-(--danger)/40">
+        <Card className="mb-4 border-[rgb(var(--danger-rgb)/0.4)]">
           <p className="text-[13px] text-(--danger)">{record.error}</p>
         </Card>
       )}

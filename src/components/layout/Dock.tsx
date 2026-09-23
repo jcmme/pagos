@@ -186,7 +186,7 @@ export function Dock({ data }: { data: QuickCaptureData }) {
       {failed && (
         <div
           role="alert"
-          className="glass fixed inset-x-4 z-50 flex items-center gap-3 rounded-(--radius-md) border border-(--danger)/30 p-3"
+          className="glass fixed inset-x-4 z-50 flex items-center gap-3 rounded-(--radius-md) border border-[rgb(var(--danger-rgb)/0.3)] p-3"
           style={{ bottom: "calc(var(--dock-height, 72px) + 12px)" }}
         >
           <span className="min-w-0 flex-1 text-[13px] text-(--foreground)">

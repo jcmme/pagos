@@ -43,7 +43,13 @@ export async function searchEverything(query: string): Promise<SearchHit[]> {
     }),
   ]);
 
-  const dateFormat = new Intl.DateTimeFormat("es-MX", { day: "2-digit", month: "short" });
+  // UTC: las fechas se guardan como medianoche UTC del día, y formatearlas en
+// hora local las retrocede al día anterior.
+  const dateFormat = new Intl.DateTimeFormat("es-MX", {
+    day: "2-digit",
+    month: "short",
+    timeZone: "UTC",
+  });
 
   return [
     ...transactions.map((transaction): SearchHit => ({

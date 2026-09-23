@@ -34,7 +34,7 @@ export function AppShell({
                 className={cn(
                   "flex items-center gap-3 rounded-(--radius-md) px-3 py-2 text-[14px] transition-colors",
                   active
-                    ? "bg-(--accent)/15 text-(--accent)"
+                    ? "bg-[rgb(var(--accent-rgb)/0.15)] text-(--accent)"
                     : "text-(--foreground-muted) hover:bg-(--surface-2) hover:text-(--foreground)"
                 )}
               >

@@ -122,7 +122,7 @@ export function Allocator({
           className={cn(
             "rounded-(--radius-full) px-2.5 py-1 text-[12px] tabular-nums",
             over
-              ? "bg-(--danger)/15 text-(--danger)"
+              ? "bg-[rgb(var(--danger-rgb)/0.15)] text-(--danger)"
               : "bg-(--surface-2) text-(--foreground-muted)"
           )}
         >
@@ -131,7 +131,7 @@ export function Allocator({
       </div>
 
       {income === null && (
-        <p className="rounded-(--radius-md) bg-(--warning)/12 px-3 py-2 text-[13px] text-(--warning)">
+        <p className="rounded-(--radius-md) bg-[rgb(var(--warning-rgb)/0.12)] px-3 py-2 text-[13px] text-(--warning)">
           Captura arriba lo que tienes este mes para ver cuánto es cada
           porcentaje. Los porcentajes se guardan igual.
         </p>
@@ -142,7 +142,7 @@ export function Allocator({
           className={cn(
             "flex items-start gap-2 rounded-(--radius-md) px-3 py-2 text-[13px]",
             hasSavings
-              ? "bg-(--success)/12 text-(--success)"
+              ? "bg-[rgb(var(--success-rgb)/0.12)] text-(--success)"
               : "bg-(--surface-2) text-(--foreground-muted)"
           )}
         >
@@ -187,7 +187,7 @@ export function Allocator({
                   <p className="flex items-center gap-1.5 truncate text-[14px]">
                     {row.name}
                     {row.savings && (
-                      <span className="rounded-(--radius-full) bg-(--success)/15 px-1.5 py-0.5 text-[10px] text-(--success)">
+                      <span className="rounded-(--radius-full) bg-[rgb(var(--success-rgb)/0.15)] px-1.5 py-0.5 text-[10px] text-(--success)">
                         ahorro
                       </span>
                     )}

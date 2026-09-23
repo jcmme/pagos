@@ -138,8 +138,8 @@ export function CaptureSheet({
                 className={cn(
                   "pressable flex shrink-0 items-center gap-1.5 rounded-(--radius-md) px-3 py-2 text-[12px] font-medium",
                   kind === "EXPENSE"
-                    ? "bg-(--danger)/15 text-(--danger)"
-                    : "bg-(--success)/15 text-(--success)"
+                    ? "bg-[rgb(var(--danger-rgb)/0.15)] text-(--danger)"
+                    : "bg-[rgb(var(--success-rgb)/0.15)] text-(--success)"
                 )}
               >
                 {kind === "EXPENSE" ? <ArrowUp size={ICON.sm} /> : <ArrowDown size={ICON.sm} />}
@@ -158,7 +158,7 @@ export function CaptureSheet({
                     className={cn(
                       "pressable flex shrink-0 items-center gap-1.5 rounded-(--radius-md) px-3 py-2 text-[12px]",
                       open || filled
-                        ? "bg-(--accent)/15 text-(--accent)"
+                        ? "bg-[rgb(var(--accent-rgb)/0.15)] text-(--accent)"
                         : "bg-(--surface-2) text-(--foreground-muted)"
                     )}
                   >

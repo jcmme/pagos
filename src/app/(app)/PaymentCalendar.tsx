@@ -73,7 +73,7 @@ export function PaymentCalendar({
               className={cn(
                 "flex aspect-square flex-col items-center justify-center gap-1 rounded-(--radius-sm) text-[12px]",
                 today === day
-                  ? "bg-(--accent)/20 font-semibold text-(--accent)"
+                  ? "bg-[rgb(var(--accent-rgb)/0.2)] font-semibold text-(--accent)"
                   : dayEvents.length > 0
                     ? "bg-(--surface-2) text-(--foreground)"
                     : "text-(--foreground-subtle)"

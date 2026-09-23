@@ -112,7 +112,7 @@ export function SwipeToConfirm({
       )}
     >
       <div
-        className="absolute inset-y-0 left-0 bg-(--accent)/25"
+        className="absolute inset-y-0 left-0 bg-[rgb(var(--accent-rgb)/0.25)]"
         style={{ width: `${offset + THUMB}px`, transition: `width ${glide}` }}
       />
 

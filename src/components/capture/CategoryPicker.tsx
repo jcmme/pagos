@@ -63,7 +63,7 @@ export function CategoryPicker({
         <button
           type="button"
           onClick={() => onPick(path[path.length - 1])}
-          className="rounded-(--radius-md) border border-(--accent)/40 bg-(--accent)/10 px-3 py-2 text-left text-[14px] text-(--accent)"
+          className="rounded-(--radius-md) border border-[rgb(var(--accent-rgb)/0.4)] bg-[rgb(var(--accent-rgb)/0.1)] px-3 py-2 text-left text-[14px] text-(--accent)"
         >
           Usar “{path[path.length - 1].name}” tal cual
         </button>

@@ -8,7 +8,7 @@ const VARIANTS: Record<Variant, string> = {
   secondary:
     "bg-(--surface-2) text-(--foreground) hover:bg-(--surface-3) active:opacity-80",
   ghost: "bg-transparent text-(--accent) hover:bg-(--surface-2)",
-  danger: "bg-(--danger)/15 text-(--danger) hover:bg-(--danger)/25",
+  danger: "bg-[rgb(var(--danger-rgb)/0.15)] text-(--danger) hover:bg-[rgb(var(--danger-rgb)/0.25)]",
 };
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {

@@ -78,7 +78,7 @@ export function MiniBars({
                     ? "bg-(--accent)"
                     : bar.future
                       ? "bg-(--surface-3)"
-                      : "bg-(--accent)/35"
+                      : "bg-[rgb(var(--accent-rgb)/0.35)]"
                 )}
                 // Dos píxeles de piso: una barra en cero que desaparece del
                 // todo hace creer que falta el día, no que no se gastó.

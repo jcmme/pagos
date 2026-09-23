@@ -16,10 +16,20 @@ export function formatCurrency(value: number | string | { toString(): string }) 
   return currencyFormatter.format(numeric);
 }
 
+// En UTC, y no es un detalle: la fecha de un movimiento se guarda como
+// medianoche UTC del día de calendario. Formatearla en la hora local la
+// retrocede seis horas y la deja en el día ANTERIOR: un gasto del 20 se
+// mostraba como 19, en todas las listas de la app.
+//
+// Es el espejo del fallo de captura. Aquel guardaba un día de más al escribir;
+// este mostraba un día de menos al leer, así que en la pantalla casi se
+// cancelaban y ninguno de los dos saltaba a la vista. Se vio al mirar una
+// captura de la app con los datos reales al lado.
 const dateFormatter = new Intl.DateTimeFormat(LOCALE, {
   day: "2-digit",
   month: "short",
   year: "numeric",
+  timeZone: "UTC",
 });
 
 export function formatDate(value: Date | string) {

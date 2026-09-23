@@ -45,6 +45,24 @@
   --foreground-muted: #b6b6bc;
   --foreground-subtle: #9d9da3;
 
+  /* Los acentos, también como tripletas RGB.
+     Un tinte ("este color al 12%") se escribe entonces
+     `rgb(var(--accent-rgb) / 0.12)`, que entiende cualquier navegador.
+
+     La alternativa de Tailwind, `bg-(color:--accent)/12`, compila a
+     `color-mix()`, que Safari solo entiende desde la 16.2: en un iPhone más
+     viejo cae a la reserva, que es el color SÓLIDO, y el texto del mismo color
+     encima se vuelve invisible. Un aviso que no se lee es peor que uno feo.
+
+     (La forma corta `bg-(--accent)/12`, que es la que había, era todavía peor:
+     Tailwind no sabe que la variable es un color y se tragaba la opacidad en
+     silencio en TODOS los navegadores. Los avisos de la pantalla de
+     Presupuestos llevaban tiempo saliendo como bloques sólidos.) */
+  --accent-rgb: 10 132 255;
+  --success-rgb: 48 209 88;
+  --warning-rgb: 255 159 10;
+  --danger-rgb: 255 69 58;
+
   --accent: #0a84ff;
   --accent-hover: #409cff;
   --success: #30d158;
