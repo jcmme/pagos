@@ -46,3 +46,32 @@ export function daysUntil(date: Date, from: Date = new Date()) {
   const target = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
   return Math.round((target.getTime() - today.getTime()) / 86_400_000);
 }
+
+/**
+ * Si el pago ya se cubrió en el ciclo que está corriendo.
+ *
+ * Existe porque el botón "Pagado" escribía `lastPaidAt` y **nadie lo leía**:
+ * marcabas la renta como pagada, registrabas el movimiento —y el saldo ya
+ * bajaba—, pero el disponible seguía apartando el importe otra vez y la
+ * tarjeta del Resumen seguía diciendo que vencía. El pago se descontaba dos
+ * veces hasta que pasaba el día.
+ *
+ * "El ciclo que corre" es la ventana que termina en el próximo vencimiento y
+ * dura un periodo hacia atrás. Así pagar cuatro días antes cuenta —es lo
+ * normal—, y en cuanto el vencimiento pasa y el siguiente se corre un mes, esa
+ * misma fecha deja de contar sola, sin tener que limpiar nada.
+ */
+export function isPaidForCycle(
+  payment: { frequency: Frequency; dueDay: number; dueMonth: number | null; lastPaidAt: Date | null },
+  from: Date = new Date()
+): boolean {
+  if (!payment.lastPaidAt) return false;
+
+  const next = computeNextDueDate(payment, from);
+  const inicio = new Date(next);
+  if (payment.frequency === "WEEKLY") inicio.setUTCDate(inicio.getUTCDate() - 7);
+  else if (payment.frequency === "YEARLY") inicio.setUTCFullYear(inicio.getUTCFullYear() - 1);
+  else inicio.setUTCMonth(inicio.getUTCMonth() - 1);
+
+  return payment.lastPaidAt > inicio;
+}

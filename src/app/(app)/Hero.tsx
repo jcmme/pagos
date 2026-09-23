@@ -106,7 +106,7 @@ export function Hero({
             </p>
           </>
         ) : (
-          <p className="mt-2 text-[14px] text-(--foreground-muted)">{reason}</p>
+          <p className="mt-2 text-[13px] text-(--foreground-muted)">{reason}</p>
         )}
       </div>
 
@@ -118,7 +118,7 @@ export function Hero({
               de tarjeta, para que la cifra siga siendo lo único que pesa. */}
           <div className="h-1 w-full overflow-hidden rounded-(--radius-full) bg-(--surface-2)">
             <div
-              className="h-full rounded-(--radius-full) transition-[width] duration-500"
+              className="h-full rounded-(--radius-full) transition-[width] duration-(--dur-slow)"
               style={{
                 width: `${Math.min(100, (spent / budget) * 100)}%`,
                 background:

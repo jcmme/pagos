@@ -13,6 +13,7 @@ import { CATEGORY_ICONS, ICON_GROUPS, guessIcon } from "@/lib/category-icons";
 import { CategoryGlyph } from "@/components/ui/CategoryGlyph";
 import { cn } from "@/lib/utils";
 import { ICON } from "@/lib/icons";
+import { IconButton } from "@/components/ui/IconButton";
 import {
   createCategory,
   updateCategory,
@@ -89,7 +90,7 @@ function IconPicker({
         <button
           type="button"
           onClick={() => setIcon(null)}
-          className="text-[12px] text-(--foreground-muted) underline-offset-2 hover:underline"
+          className="text-[13px] text-(--foreground-muted) underline-offset-2 hover:underline"
         >
           Usar la inicial
         </button>
@@ -236,27 +237,26 @@ export function CategoriesClient({ categories }: { categories: Category[] }) {
                   )}
                 </div>
                 <div className="flex shrink-0 gap-1">
-                  <button
+                  <IconButton
                     onClick={() => setCreating({ parentId: root.id })}
-                    className="rounded-full p-1.5 text-(--foreground-subtle) hover:bg-(--surface-2) hover:text-(--accent)"
+                    tone="accent"
                     aria-label="Agregar subcategoría"
                   >
-                    <Plus size={ICON.sm} />
-                  </button>
-                  <button
+                    <Plus size={ICON.md} />
+                  </IconButton>
+                  <IconButton
                     onClick={() => setEditing(root)}
-                    className="rounded-full p-1.5 text-(--foreground-subtle) hover:bg-(--surface-2) hover:text-(--foreground)"
                     aria-label="Editar"
                   >
-                    <Pencil size={ICON.sm} />
-                  </button>
-                  <button
+                    <Pencil size={ICON.md} />
+                  </IconButton>
+                  <IconButton
                     onClick={() => deleteCategory(root.id)}
-                    className="rounded-full p-1.5 text-(--foreground-subtle) hover:bg-(--surface-2) hover:text-(--danger)"
+                    tone="danger"
                     aria-label="Eliminar"
                   >
-                    <Trash2 size={ICON.sm} />
-                  </button>
+                    <Trash2 size={ICON.md} />
+                  </IconButton>
                 </div>
               </div>
 
@@ -274,20 +274,19 @@ export function CategoriesClient({ categories }: { categories: Category[] }) {
                         )}
                       </div>
                       <div className="flex shrink-0 gap-1">
-                        <button
+                        <IconButton
                           onClick={() => setEditing(child)}
-                          className="rounded-full p-1.5 text-(--foreground-subtle) hover:bg-(--surface-2) hover:text-(--foreground)"
                           aria-label="Editar"
                         >
-                          <Pencil size={ICON.sm} />
-                        </button>
-                        <button
+                          <Pencil size={ICON.md} />
+                        </IconButton>
+                        <IconButton
                           onClick={() => deleteCategory(child.id)}
-                          className="rounded-full p-1.5 text-(--foreground-subtle) hover:bg-(--surface-2) hover:text-(--danger)"
+                          tone="danger"
                           aria-label="Eliminar"
                         >
-                          <Trash2 size={ICON.sm} />
-                        </button>
+                          <Trash2 size={ICON.md} />
+                        </IconButton>
                       </div>
                     </div>
                   ))}
@@ -298,7 +297,7 @@ export function CategoriesClient({ categories }: { categories: Category[] }) {
         })}
 
         {roots.length === 0 && (
-          <p className="text-[14px] text-(--foreground-muted)">
+          <p className="text-[13px] text-(--foreground-muted)">
             Aún no tienes categorías. Crea la primera.
           </p>
         )}

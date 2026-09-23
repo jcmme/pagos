@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/session";
-import { currentMonthYear, monthRange } from "@/lib/dates";
+import { currentMonthYear, monthRange, todayISO, dayKey } from "@/lib/dates";
 import { Card, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { CountUp } from "@/components/ui/CountUp";
@@ -102,13 +102,16 @@ export default async function DashboardPage() {
   // Las píldoras del encabezado. Salen de lo que ya está en memoria: ninguna
   // añade una consulta.
   const now = new Date();
-  const todayKey = now.toISOString().slice(0, 10);
+  // "Hoy" es el día del usuario, no el del servidor. Vercel corre en UTC, así
+  // que de las 18:00 en adelante este cálculo se adelantaba un día y la
+  // píldora "Hoy" salía en cero justo cuando más se había gastado.
+  const todayKey = todayISO(now);
   const todaySpent = expenses
-    .filter((expense) => expense.date.toISOString().slice(0, 10) === todayKey)
+    .filter((expense) => dayKey(expense.date) === todayKey)
     .reduce((sum, expense) => sum + toNumber(expense.amount), 0);
   // Promedio sobre los días transcurridos, no sobre el mes entero: el día 3
   // dividir entre 30 haría parecer que no se gasta nada.
-  const perDay = totalSpent / Math.max(1, now.getUTCDate());
+  const perDay = totalSpent / Math.max(1, Number(todayKey.slice(8, 10)));
   const nextPayment = upcoming[0];
 
   const pills: HeroPill[] = [];
@@ -309,7 +312,7 @@ export default async function DashboardPage() {
                 <span className="truncate text-[14px]">{payment.name}</span>
               </div>
               <div className="flex shrink-0 items-center gap-2">
-                <span className="text-[14px] text-(--foreground-muted)">
+                <span className="text-[13px] text-(--foreground-muted)">
                   {formatCurrency(payment.amount)}
                 </span>
                 <Badge tone={urgencyTone(days)}>{urgencyLabel(days)}</Badge>
@@ -317,7 +320,7 @@ export default async function DashboardPage() {
             </div>
           ))}
           {upcoming.length === 0 && (
-            <p className="text-[14px] text-(--foreground-muted)">
+            <p className="text-[13px] text-(--foreground-muted)">
               No tienes pagos fijos activos.
             </p>
           )}

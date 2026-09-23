@@ -43,7 +43,7 @@ export function AccountCarousel({ accounts }: { accounts: AccountWithBalance[] }
     return (
       <Link
         href="/cuentas"
-        className="pressable flex h-[132px] items-center justify-center rounded-(--radius-lg) border border-dashed border-(--border-strong) text-[14px] text-(--foreground-muted)"
+        className="pressable flex h-[132px] items-center justify-center rounded-(--radius-lg) border border-dashed border-(--border-strong) text-[13px] text-(--foreground-muted)"
       >
         Agrega tu primera cuenta
       </Link>
@@ -177,7 +177,7 @@ export function AccountCarousel({ accounts }: { accounts: AccountWithBalance[] }
               aria-label={`Ver ${account.name}`}
               aria-current={index === current}
               className={cn(
-                "h-2 rounded-(--radius-full) transition-all duration-200",
+                "h-2 rounded-(--radius-full) transition-all duration-(--dur)",
                 index === current ? "w-6" : "w-2 opacity-40"
               )}
               style={{ background: account.color }}

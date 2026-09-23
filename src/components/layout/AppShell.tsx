@@ -47,7 +47,7 @@ export function AppShell({
         <form action={logoutAction}>
           <button
             type="submit"
-            className="mt-2 flex w-full items-center gap-3 rounded-(--radius-md) px-3 py-2 text-[14px] text-(--foreground-muted) hover:bg-(--surface-2) hover:text-(--danger)"
+            className="mt-2 flex w-full items-center gap-3 rounded-(--radius-md) px-3 py-2 text-[13px] text-(--foreground-muted) hover:bg-(--surface-2) hover:text-(--danger)"
           >
             <LogOut size={ICON.md} />
             Cerrar sesión

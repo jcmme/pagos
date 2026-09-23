@@ -2,6 +2,21 @@
 export const LOCALE = "es-MX";
 export const CURRENCY = "MXN";
 
+// La zona horaria de la app, declarada y no deducida.
+//
+// La fecha de un movimiento es un DÍA DE CALENDARIO, no un instante: "el gasto
+// del 23" no cambia porque se mire desde otro huso. Por eso se guardan como
+// medianoche UTC del día, y por eso hay que decidir explícitamente de quién es
+// ese día.
+//
+// Deducirlo del reloj no sirve: el servidor de Vercel corre en UTC y el
+// teléfono en la hora local, así que a las 20:30 en CDMX cada uno contestaba
+// un día distinto. El cliente guardaba el gasto en el día siguiente y el
+// servidor no lo contaba como "hoy". Con la zona fija los dos coinciden
+// siempre, y el día del usuario es el del usuario aunque el servidor esté en
+// Virginia.
+export const TIME_ZONE = "America/Mexico_City";
+
 // Paleta de las gráficas y de los puntos de categoría. No son los acentos de
 // la interfaz (esos siguen siendo los de iOS): los colores de marca son
 // demasiado claros y saturados para distinguirse entre sí en una gráfica.

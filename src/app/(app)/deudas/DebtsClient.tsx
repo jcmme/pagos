@@ -11,6 +11,7 @@ import { Modal } from "@/components/ui/Modal";
 import { formatCurrency, formatDate, cn } from "@/lib/utils";
 import { DEBT_TYPE_LABELS } from "@/lib/constants";
 import { ICON } from "@/lib/icons";
+import { todayISO } from "@/lib/dates";
 import {
   createDebt,
   updateDebt,
@@ -60,7 +61,7 @@ function DebtForm({
     return res;
   }, initialState);
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayISO();
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
@@ -110,7 +111,7 @@ function PaymentForm({ debtId, onSuccess }: { debtId: string; onSuccess: () => v
     if (!res.error) onSuccess();
     return res;
   }, initialState);
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayISO();
 
   return (
     <form action={formAction} className="flex flex-col gap-3">
@@ -253,7 +254,7 @@ export function DebtsClient({ debts }: { debts: SerializedDebt[] }) {
           <DebtCard key={d.id} debt={d} />
         ))}
         {debts.length === 0 && (
-          <p className="text-[14px] text-(--foreground-muted)">No tienes deudas registradas.</p>
+          <p className="text-[13px] text-(--foreground-muted)">No tienes deudas registradas.</p>
         )}
       </div>
 

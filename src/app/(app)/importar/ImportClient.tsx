@@ -11,6 +11,7 @@ import { formatDate } from "@/lib/utils";
 import { IMPORT_STATUS_LABELS } from "@/lib/constants";
 import { deleteImport } from "@/modules/statements/actions";
 import { ICON } from "@/lib/icons";
+import { IconButton } from "@/components/ui/IconButton";
 
 type ImportRow = {
   id: string;
@@ -157,13 +158,13 @@ export function ImportClient({
                 <Badge tone={STATUS_TONE[item.status] ?? "neutral"}>
                   {IMPORT_STATUS_LABELS[item.status]}
                 </Badge>
-                <button
+                <IconButton
                   onClick={() => deleteImport(item.id)}
-                  className="rounded-full p-1.5 text-(--foreground-subtle) hover:bg-(--surface-2) hover:text-(--danger)"
+                  tone="danger"
                   aria-label="Eliminar importación"
                 >
-                  <Trash2 size={ICON.sm} />
-                </button>
+                  <Trash2 size={ICON.md} />
+                </IconButton>
                 <ChevronRight size={ICON.md} className="text-(--foreground-subtle)" />
               </div>
             </Card>
@@ -171,7 +172,7 @@ export function ImportClient({
         })}
 
         {imports.length === 0 && (
-          <p className="text-[14px] text-(--foreground-muted)">
+          <p className="text-[13px] text-(--foreground-muted)">
             Todavía no has importado ningún estado de cuenta.
           </p>
         )}

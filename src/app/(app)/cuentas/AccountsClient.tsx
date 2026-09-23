@@ -21,6 +21,7 @@ import {
 } from "@/modules/accounts/actions";
 import type { AccountWithBalance } from "@/modules/accounts/balance";
 import { ICON } from "@/lib/icons";
+import { IconButton } from "@/components/ui/IconButton";
 
 const initialState: ActionState = { error: null };
 
@@ -205,7 +206,7 @@ function CardDetail({ account }: { account: AccountWithBalance }) {
     <div className="mt-3 border-t border-(--border) pt-3">
       {status.limit ? (
         <>
-          <div className="mb-1 flex justify-between text-[12px] text-(--foreground-muted)">
+          <div className="mb-1 flex justify-between text-[13px] text-(--foreground-muted)">
             <span>Usado</span>
             <span>
               {formatCurrency(status.used)} de {formatCurrency(status.limit)}
@@ -296,33 +297,31 @@ export function AccountsClient({
               </div>
               <div className="flex shrink-0 items-center gap-2">
                 <span
-                  className={`text-[16px] font-semibold ${
+                  className={`text-[15px] font-medium ${
                     account.balance < 0 ? "text-(--danger)" : ""
                   }`}
                 >
                   {formatCurrency(account.balance)}
                 </span>
-                <button
+                <IconButton
                   onClick={() => setEditing(account)}
-                  className="rounded-full p-1.5 text-(--foreground-subtle) hover:bg-(--surface-2) hover:text-(--foreground)"
                   aria-label="Editar"
                 >
-                  <Pencil size={ICON.sm} />
-                </button>
-                <button
+                  <Pencil size={ICON.md} />
+                </IconButton>
+                <IconButton
                   onClick={() => archiveAccount(account.id, true)}
-                  className="rounded-full p-1.5 text-(--foreground-subtle) hover:bg-(--surface-2) hover:text-(--foreground)"
                   aria-label="Archivar"
                 >
-                  <Archive size={ICON.sm} />
-                </button>
-                <button
+                  <Archive size={ICON.md} />
+                </IconButton>
+                <IconButton
                   onClick={() => deleteAccount(account.id)}
-                  className="rounded-full p-1.5 text-(--foreground-subtle) hover:bg-(--surface-2) hover:text-(--danger)"
+                  tone="danger"
                   aria-label="Eliminar"
                 >
-                  <Trash2 size={ICON.sm} />
-                </button>
+                  <Trash2 size={ICON.md} />
+                </IconButton>
               </div>
             </div>
 
@@ -331,7 +330,7 @@ export function AccountsClient({
         ))}
 
         {active.length === 0 && (
-          <p className="text-[14px] text-(--foreground-muted)">
+          <p className="text-[13px] text-(--foreground-muted)">
             Agrega tus cuentas para poder calcular tu patrimonio, tu fondo de
             emergencia y cuánto tienes disponible para gastar.
           </p>

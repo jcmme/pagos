@@ -108,10 +108,17 @@ export const getHealthReport = cache(async function getHealthReport(
 
   // Se promedia sobre los meses que realmente tienen datos, no sobre 6 fijos,
   // para que un usuario nuevo no vea un promedio artificialmente bajo.
-  const monthsWithData = Math.max(
-    1,
-    Math.min(MONTHS_OF_HISTORY + 1, now.getUTCMonth() + 1 - since.getUTCMonth() + 1)
-  );
+  //
+  // La resta tiene que cruzar el fin de año. Restando solo los índices de mes,
+  // de enero a junio salía negativo —en febrero, `since` es agosto del año
+  // anterior: 2 - 7 + 1 = −4— y el `Math.max(1, …)` lo dejaba en 1. Medio año
+  // el ingreso promedio salía multiplicado por siete, el pilar de deuda sobre
+  // ingreso marcaba 100 siempre y el score de salud quedaba falsamente alto.
+  const monthsElapsed =
+    (now.getUTCFullYear() - since.getUTCFullYear()) * 12 +
+    (now.getUTCMonth() - since.getUTCMonth()) +
+    1;
+  const monthsWithData = Math.max(1, Math.min(MONTHS_OF_HISTORY + 1, monthsElapsed));
 
   const essentialIds = new Set(essentialCategories.map((category) => category.id));
   const monthlyEssentials =

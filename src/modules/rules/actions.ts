@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { requireUserId } from "@/lib/session";
 import { ruleSchema } from "./schema";
 
 export type ActionState = { error: string | null };
@@ -20,10 +21,15 @@ function parseForm(formData: FormData) {
   });
 }
 
+// Mismo caso que las categorías: catálogo compartido, así que no había
+// ningún `userId` en el WHERE haciendo de filtro y estas acciones corrían sin
+// saber quién llamaba.
 export async function createRule(
   _prev: ActionState,
   formData: FormData
 ): Promise<ActionState> {
+  await requireUserId();
+
   const parsed = parseForm(formData);
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
@@ -50,6 +56,8 @@ export async function updateRule(
   _prev: ActionState,
   formData: FormData
 ): Promise<ActionState> {
+  await requireUserId();
+
   const parsed = parseForm(formData);
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
@@ -64,11 +72,15 @@ export async function updateRule(
 }
 
 export async function toggleRule(id: string, active: boolean) {
+  await requireUserId();
+
   await prisma.categoryRule.update({ where: { id }, data: { active } });
   revalidateAll();
 }
 
 export async function deleteRule(id: string) {
+  await requireUserId();
+
   await prisma.categoryRule.delete({ where: { id } });
   revalidateAll();
 }

@@ -10,6 +10,7 @@ import { Modal } from "@/components/ui/Modal";
 import { CategorySelect, categoryLabel, type CategoryOption } from "@/components/ui/CategorySelect";
 import { RULE_MATCH_LABELS } from "@/lib/constants";
 import { ICON } from "@/lib/icons";
+import { IconButton } from "@/components/ui/IconButton";
 import {
   createRule,
   updateRule,
@@ -150,31 +151,30 @@ export function RulesClient({
                 )}
                 <button
                   onClick={() => toggleRule(rule.id, !rule.active)}
-                  className="rounded-(--radius-full) bg-(--surface-2) px-2.5 py-1 text-[12px] text-(--foreground-muted)"
+                  className="rounded-(--radius-full) bg-(--surface-2) px-2.5 py-1 text-[13px] text-(--foreground-muted)"
                 >
                   {rule.active ? "Desactivar" : "Activar"}
                 </button>
-                <button
+                <IconButton
                   onClick={() => setEditing(rule)}
-                  className="rounded-full p-1.5 text-(--foreground-subtle) hover:bg-(--surface-2) hover:text-(--foreground)"
                   aria-label="Editar"
                 >
-                  <Pencil size={ICON.sm} />
-                </button>
-                <button
+                  <Pencil size={ICON.md} />
+                </IconButton>
+                <IconButton
                   onClick={() => deleteRule(rule.id)}
-                  className="rounded-full p-1.5 text-(--foreground-subtle) hover:bg-(--surface-2) hover:text-(--danger)"
+                  tone="danger"
                   aria-label="Eliminar"
                 >
-                  <Trash2 size={ICON.sm} />
-                </button>
+                  <Trash2 size={ICON.md} />
+                </IconButton>
               </div>
             </div>
           </Card>
         ))}
 
         {rules.length === 0 && (
-          <p className="text-[14px] text-(--foreground-muted)">
+          <p className="text-[13px] text-(--foreground-muted)">
             Todavía no hay reglas. Se crean solas cuando corriges categorías al importar.
           </p>
         )}

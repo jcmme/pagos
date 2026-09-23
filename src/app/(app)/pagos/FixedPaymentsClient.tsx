@@ -13,6 +13,7 @@ import { formatCurrency } from "@/lib/utils";
 import { FREQUENCY_LABELS, MONTH_NAMES_SHORT } from "@/lib/constants";
 import { computeNextDueDate, daysUntil } from "@/modules/fixed-payments/next-due-date";
 import { ICON } from "@/lib/icons";
+import { IconButton } from "@/components/ui/IconButton";
 import {
   createFixedPayment,
   updateFixedPayment,
@@ -238,7 +239,7 @@ export function FixedPaymentsClient({
                   </p>
                 </div>
                 <p
-                  className={`shrink-0 text-[16px] font-semibold ${
+                  className={`shrink-0 text-[15px] font-medium ${
                     p.kind === "INCOME" ? "text-(--success)" : ""
                   }`}
                 >
@@ -256,38 +257,37 @@ export function FixedPaymentsClient({
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => markFixedPaymentPaid(p.id)}
-                    className="flex items-center gap-1 rounded-(--radius-full) bg-(--surface-2) px-2.5 py-1 text-[12px] text-(--foreground-muted) hover:text-(--success)"
+                    className="flex items-center gap-1 rounded-(--radius-full) bg-(--surface-2) px-2.5 py-1 text-[13px] text-(--foreground-muted) hover:text-(--success)"
                     title="Marcar como pagado"
                   >
                     <Check size={ICON.sm} /> Pagado
                   </button>
                   <button
                     onClick={() => toggleFixedPaymentActive(p.id, !p.active)}
-                    className="rounded-(--radius-full) bg-(--surface-2) px-2.5 py-1 text-[12px] text-(--foreground-muted)"
+                    className="rounded-(--radius-full) bg-(--surface-2) px-2.5 py-1 text-[13px] text-(--foreground-muted)"
                   >
                     {p.active ? "Pausar" : "Activar"}
                   </button>
-                  <button
+                  <IconButton
                     onClick={() => setEditing(p)}
-                    className="rounded-full p-1.5 text-(--foreground-subtle) hover:bg-(--surface-2) hover:text-(--foreground)"
                     aria-label="Editar"
                   >
-                    <Pencil size={ICON.sm} />
-                  </button>
-                  <button
+                    <Pencil size={ICON.md} />
+                  </IconButton>
+                  <IconButton
                     onClick={() => deleteFixedPayment(p.id)}
-                    className="rounded-full p-1.5 text-(--foreground-subtle) hover:bg-(--surface-2) hover:text-(--danger)"
+                    tone="danger"
                     aria-label="Eliminar"
                   >
-                    <Trash2 size={ICON.sm} />
-                  </button>
+                    <Trash2 size={ICON.md} />
+                  </IconButton>
                 </div>
               </div>
             </Card>
           );
         })}
         {payments.length === 0 && (
-          <p className="text-[14px] text-(--foreground-muted)">
+          <p className="text-[13px] text-(--foreground-muted)">
             No tienes pagos fijos registrados.
           </p>
         )}

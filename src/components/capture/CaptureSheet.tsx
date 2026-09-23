@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
   ArrowDown,
   ArrowRight,
@@ -21,13 +21,11 @@ import {
   type SegmentedOption,
 } from "@/components/ui/SegmentedToggle";
 import { cn, formatCurrency } from "@/lib/utils";
-import { createQuickTransaction } from "@/modules/transactions/actions";
 import {
   evaluateExpression,
   formatExpression,
   hasOperation,
 } from "@/modules/transactions/expression";
-import type { ActionState } from "@/lib/action-state";
 import type {
   QuickCaptureData,
   QuickCategory,
@@ -35,12 +33,10 @@ import type {
 import { AmountPad } from "./AmountPad";
 import { CategoryPicker } from "./CategoryPicker";
 import { ICON } from "@/lib/icons";
+import { todayISO } from "@/lib/dates";
 
-const initialState: ActionState = { error: null };
 
-function todayValue() {
-  return new Date().toISOString().slice(0, 10);
-}
+
 
 // Lo que se puede ajustar sin salir del teclado. La cuenta no está aquí a
 // propósito: casi siempre se repite y vive en "Más detalles" del segundo paso.
@@ -61,10 +57,13 @@ const KIND_OPTIONS: SegmentedOption<"EXPENSE" | "INCOME">[] = [
 export function CaptureSheet({
   open,
   onClose,
+  onSubmit,
   data,
 }: {
   open: boolean;
   onClose: () => void;
+  /** Entrega el formulario a quien sigue montado tras cerrar la hoja. */
+  onSubmit: (formData: FormData) => void;
   data: QuickCaptureData;
 }) {
   // Dos pasos en vez de un formulario largo: mientras se teclea el monto no
@@ -80,18 +79,19 @@ export function CaptureSheet({
   // La nota y la fecha se controlan desde React porque los chips del primer
   // paso y el resumen del segundo tienen que ver el mismo valor.
   const [description, setDescription] = useState("");
-  const [date, setDate] = useState(todayValue());
+  const [date, setDate] = useState(todayISO());
   const [field, setField] = useState<"nota" | "fecha" | null>(null);
   const form = useRef<HTMLFormElement>(null);
 
-  const [state, formAction, pending] = useActionState(
-    async (prev: ActionState, formData: FormData) => {
-      const result = await createQuickTransaction(prev, formData);
-      if (!result.error) onClose();
-      return result;
-    },
-    initialState
-  );
+  // La hoja ya no espera al servidor: entrega el formulario al Dock, que sí
+  // sigue montado, y se cierra en el mismo gesto.
+  //
+  // Antes hacía `await createQuickTransaction(...)` y solo cerraba al
+  // responder: capturar un gasto dejaba la hoja abierta con el deslizador a
+  // medias uno o dos segundos, en el gesto más frecuente de la app. Si el
+  // guardado falla, el Dock lo dice y ofrece reintentar con los mismos datos,
+  // así que cerrar antes no pierde nada.
+  const [pending, setPending] = useState(false);
 
   // El total ya resuelto. Lo que viaja al servidor es esto, nunca la
   // expresión: z.coerce.number() convertiría "43+567" en NaN.
@@ -107,7 +107,14 @@ export function CaptureSheet({
       onClose={onClose}
       title={step === "monto" ? "Monto" : "Nuevo movimiento"}
     >
-      <form ref={form} action={formAction} className="flex flex-col gap-4">
+      <form
+        ref={form}
+        action={(formData) => {
+          setPending(true);
+          onSubmit(formData);
+        }}
+        className="flex flex-col gap-4"
+      >
         <input type="hidden" name="kind" value={kind} />
         <input
           type="hidden"
@@ -142,7 +149,7 @@ export function CaptureSheet({
               {CHIPS.map((chip) => {
                 const Icon = chip.icon;
                 const open = field === chip.id;
-                const filled = chip.id === "nota" ? description !== "" : date !== todayValue();
+                const filled = chip.id === "nota" ? description !== "" : date !== todayISO();
                 return (
                   <button
                     key={chip.id}
@@ -286,7 +293,7 @@ export function CaptureSheet({
 
             {budget && budget.limit !== null && (
               <div>
-                <div className="mb-1 flex justify-between text-[12px] text-(--foreground-muted)">
+                <div className="mb-1 flex justify-between text-[13px] text-(--foreground-muted)">
                   <span>Presupuesto del mes</span>
                   <span>
                     {formatCurrency(budget.spent + (total ?? 0))} de{" "}
@@ -333,9 +340,7 @@ export function CaptureSheet({
               </Field>
             </div>
 
-            {state.error && (
-              <p className="text-[13px] text-(--danger)">{state.error}</p>
-            )}
+
 
             <SwipeToConfirm
               label={

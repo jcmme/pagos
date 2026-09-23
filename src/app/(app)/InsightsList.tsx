@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/Card";
 import { dismissInsight } from "@/modules/insights/actions";
 import type { Insight } from "@/modules/insights/generate";
 import { ICON } from "@/lib/icons";
+import { IconButton } from "@/components/ui/IconButton";
 
 const TONE_STYLES: Record<Insight["tone"], { color: string; Icon: typeof Info }> = {
   info: { color: "text-(--accent)", Icon: Info },
@@ -44,14 +45,13 @@ export function InsightsList({ insights }: { insights: Insight[] }) {
               <div className="min-w-0 flex-1">{body}</div>
             )}
 
-            <button
+            <IconButton
               disabled={pending}
               onClick={() => startTransition(() => dismissInsight(insight.key))}
-              className="shrink-0 rounded-full p-1 text-(--foreground-subtle) hover:bg-(--surface-2) hover:text-(--foreground)"
               aria-label="Descartar"
             >
-              <X size={ICON.sm} />
-            </button>
+              <X size={ICON.md} />
+            </IconButton>
           </Card>
         );
       })}

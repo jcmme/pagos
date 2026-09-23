@@ -83,7 +83,7 @@ export function SubscriptionsClient({ subscriptions }: { subscriptions: Subscrip
                     </Badge>
                   )}
                 </div>
-                <p className="shrink-0 text-[16px] font-semibold">{formatCurrency(last)}</p>
+                <p className="shrink-0 text-[15px] font-medium">{formatCurrency(last)}</p>
               </div>
 
               <div className="mt-3 flex justify-end gap-2">
@@ -114,7 +114,7 @@ export function SubscriptionsClient({ subscriptions }: { subscriptions: Subscrip
         })}
 
         {detected.length === 0 && (
-          <p className="text-[14px] text-(--foreground-muted)">
+          <p className="text-[13px] text-(--foreground-muted)">
             No se detectaron suscripciones nuevas. Necesitas al menos tres cargos del mismo
             comercio para que aparezcan aquí.
           </p>

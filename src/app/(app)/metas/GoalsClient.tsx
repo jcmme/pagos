@@ -11,6 +11,7 @@ import { Modal } from "@/components/ui/Modal";
 import { formatCurrency, formatDate, cn } from "@/lib/utils";
 import { CATEGORY_COLORS } from "@/lib/constants";
 import { ICON } from "@/lib/icons";
+import { todayISO } from "@/lib/dates";
 import {
   createGoal,
   updateGoal,
@@ -107,7 +108,7 @@ function GoalForm({
 function ContributionForm({ goalId }: { goalId: string }) {
   const action = addContribution.bind(null, goalId);
   const [state, formAction, pending] = useActionState(action, initialState);
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayISO();
 
   return (
     <form action={formAction} className="flex flex-col gap-2">
@@ -277,7 +278,7 @@ export function GoalsClient({
           />
         ))}
         {goals.length === 0 && (
-          <p className="text-[14px] text-(--foreground-muted)">
+          <p className="text-[13px] text-(--foreground-muted)">
             Define una meta (fondo de emergencia, un viaje, un enganche) y ve cuánto te falta
             cada mes para llegar.
           </p>

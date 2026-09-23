@@ -10,6 +10,8 @@ import { CaptureSheet } from "@/components/capture/CaptureSheet";
 import type { QuickCaptureData } from "@/modules/transactions/quick-data";
 import { NAV_ITEMS, PRIMARY_HREFS } from "./nav";
 import { SearchPanel } from "./SearchPanel";
+import { createQuickTransaction } from "@/modules/transactions/actions";
+import { Button } from "@/components/ui/Button";
 
 // Una sola cosa flotando abajo.
 //
@@ -31,8 +33,25 @@ export function Dock({ data }: { data: QuickCaptureData }) {
   const pathname = usePathname();
   const [searching, setSearching] = useState(false);
   const [capturing, setCapturing] = useState(false);
+  // Un guardado que no salió, con su formulario intacto para reintentar.
+  //
+  // Cerrar la hoja antes de que el servidor conteste solo es honesto si el
+  // fallo se ve. Aquí se ve, y con los datos guardados: reintentar manda
+  // exactamente lo mismo, así que adelantar el cierre no puede costar una
+  // captura.
+  const [failed, setFailed] = useState<{ data: FormData; error: string } | null>(null);
   // Cambia en cada apertura para remontar la hoja y que empiece en blanco.
   const [session, setSession] = useState(0);
+
+  // El guardado vive aquí y no en la hoja a propósito: la hoja se desmonta al
+  // cerrarse (el Modal devuelve null), así que si la petición viviera dentro,
+  // cerrar antes de tiempo se llevaría por delante su resultado. El dock no se
+  // desmonta nunca.
+  async function save(formData: FormData) {
+    setCapturing(false);
+    const result = await createQuickTransaction({ error: null }, formData);
+    if (result.error) setFailed({ data: formData, error: result.error });
+  }
 
   useEffect(() => {
     if (!searching) return;
@@ -100,7 +119,7 @@ export function Dock({ data }: { data: QuickCaptureData }) {
       <div
         className={cn(
           "glass-dock fixed z-46 overflow-hidden shadow-lg shadow-black/40",
-          "transition-all duration-300 ease-(--ease-out)",
+          "transition-all duration-(--dur-slow) ease-(--ease-out)",
           searching
             ? "left-4 right-4 rounded-(--radius-lg) md:left-1/2 md:right-auto md:w-[520px] md:-translate-x-1/2"
             : [
@@ -160,8 +179,32 @@ export function Dock({ data }: { data: QuickCaptureData }) {
         key={session}
         open={capturing}
         onClose={() => setCapturing(false)}
+        onSubmit={save}
         data={data}
       />
+
+      {failed && (
+        <div
+          role="alert"
+          className="glass fixed inset-x-4 z-50 flex items-center gap-3 rounded-(--radius-md) border border-(--danger)/30 p-3"
+          style={{ bottom: "calc(var(--dock-height, 72px) + 12px)" }}
+        >
+          <span className="min-w-0 flex-1 text-[13px] text-(--foreground)">
+            No se guardó: {failed.error}
+          </span>
+          <Button
+            variant="secondary"
+            className="shrink-0 px-3 py-1.5 text-[13px]"
+            onClick={() => {
+              const retry = failed.data;
+              setFailed(null);
+              save(retry);
+            }}
+          >
+            Reintentar
+          </Button>
+        </div>
+      )}
     </>
   );
 }

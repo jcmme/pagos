@@ -91,7 +91,7 @@ function BudgetRow({ row, month, year }: { row: Row; month: number; year: number
 export function BudgetsClient({ rows, month, year }: { rows: Row[]; month: number; year: number }) {
   if (rows.length === 0) {
     return (
-      <p className="text-[14px] text-(--foreground-muted)">
+      <p className="text-[13px] text-(--foreground-muted)">
         Crea categorías primero para poder definir presupuestos.
       </p>
     );

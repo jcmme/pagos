@@ -305,7 +305,7 @@ export function SettingsClient({
                         const result = await setUserActive(user.id, !user.active);
                         setError(result.error);
                       }}
-                      className="text-[12px] text-(--foreground-muted) hover:text-(--foreground)"
+                      className="text-[13px] text-(--foreground-muted) hover:text-(--foreground)"
                     >
                       {user.active ? "Desactivar" : "Activar"}
                     </button>

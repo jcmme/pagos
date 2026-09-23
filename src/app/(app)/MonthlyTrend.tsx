@@ -29,7 +29,7 @@ export function MonthlyTrend({ data }: { data: MonthlyTotal[] }) {
     <div className="w-full">
       {/* El promedio va como texto y no como etiqueta dentro de la gráfica:
           ahí se encimaba con la barra más alta. */}
-      <p className="mb-2 flex items-center gap-2 text-[12px] text-(--foreground-muted)">
+      <p className="mb-2 flex items-center gap-2 text-[13px] text-(--foreground-muted)">
         <span className="inline-block h-px w-5 border-t border-dashed border-(--foreground-subtle)" />
         Promedio {formatCurrency(average)} al mes
       </p>

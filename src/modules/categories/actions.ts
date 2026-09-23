@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { requireUserId } from "@/lib/session";
 import { ACTION_OK, type ActionState } from "@/lib/action-state";
 import { categorySchema, MAX_CATEGORY_DEPTH } from "./schema";
 
@@ -75,10 +76,22 @@ async function assertFits(
   return null;
 }
 
+// Las categorías y las reglas son un catálogo COMPARTIDO por toda la
+// instancia: no cuelgan de una persona, así que no hay un `userId` en el WHERE
+// que sirva de filtro. Eso las dejaba sin ninguna comprobación: el único
+// obstáculo era el redirect del proxy, y una server action se puede invocar
+// directamente.
+//
+// Y el daño no es menor: borrar una categoría arrastra en cascada los
+// presupuestos de TODAS las personas de esa categoría y deja sin categoría
+// sus movimientos. `requireUserId` lanza si no hay sesión, que es el mínimo
+// que faltaba.
 export async function createCategory(
   _prev: ActionState,
   formData: FormData
 ): Promise<ActionState> {
+  await requireUserId();
+
   const parsed = parseForm(formData);
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
@@ -100,6 +113,8 @@ export async function updateCategory(
   _prev: ActionState,
   formData: FormData
 ): Promise<ActionState> {
+  await requireUserId();
+
   const parsed = parseForm(formData);
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
@@ -153,6 +168,8 @@ async function collectDescendants(categoryId: string): Promise<Set<string>> {
  * la misma transacción: dos marcadas harían que el sobrante se contara doble.
  */
 export async function setSavingsCategory(id: string) {
+  await requireUserId();
+
   const category = await prisma.category.findUnique({
     where: { id },
     select: { parentId: true },
@@ -174,6 +191,8 @@ export async function setSavingsCategory(id: string) {
 }
 
 export async function deleteCategory(id: string) {
+  await requireUserId();
+
   // onDelete: Restrict impide borrar una categoría que tenga descendientes, y
   // con tres niveles ya no basta con borrar las hijas directas.
   const descendants = await collectDescendants(id);

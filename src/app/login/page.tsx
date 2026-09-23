@@ -7,7 +7,7 @@ export default function LoginPage() {
         <div className="mb-8 text-center">
           <div className="mb-2 text-[28px]">💰</div>
           <h1 className="text-[22px] font-semibold">Pagos</h1>
-          <p className="mt-1 text-[14px] text-(--foreground-muted)">
+          <p className="mt-1 text-[13px] text-(--foreground-muted)">
             Inicia sesión para continuar
           </p>
         </div>

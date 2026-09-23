@@ -2,6 +2,9 @@
 
 import { ReactNode, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { X } from "lucide-react";
+import { IconButton } from "@/components/ui/IconButton";
+import { ICON } from "@/lib/icons";
 
 interface ModalProps {
   open: boolean;
@@ -35,13 +38,9 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
       <div className="glass animate-sheet relative w-full max-w-md rounded-t-(--radius-lg) sm:rounded-(--radius-lg) p-6 max-h-[90vh] overflow-y-auto">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-[17px] font-semibold text-(--foreground)">{title}</h2>
-          <button
-            onClick={onClose}
-            className="flex h-7 w-7 items-center justify-center rounded-full bg-(--surface-3) text-(--foreground-muted) hover:text-(--foreground)"
-            aria-label="Cerrar"
-          >
-            ✕
-          </button>
+          <IconButton onClick={onClose} aria-label="Cerrar">
+            <X size={ICON.md} />
+          </IconButton>
         </div>
         {children}
       </div>

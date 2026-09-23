@@ -78,7 +78,7 @@ export function TagsInput({
                 key={tag}
                 type="button"
                 onClick={() => addTag(tag)}
-                className="rounded-(--radius-full) border border-(--border) px-2.5 py-1 text-[12px] text-(--foreground-muted) hover:text-(--foreground)"
+                className="rounded-(--radius-full) border border-(--border) px-2.5 py-1 text-[13px] text-(--foreground-muted) hover:text-(--foreground)"
               >
                 #{tag}
               </button>

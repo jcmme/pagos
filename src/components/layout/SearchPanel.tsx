@@ -90,7 +90,7 @@ export function SearchPanel({ onClose }: { onClose: () => void }) {
               />
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-[14px]">{hit.title}</span>
-                <span className="block truncate text-[12px] text-(--foreground-muted)">
+                <span className="block truncate text-[13px] text-(--foreground-muted)">
                   {hit.detail}
                 </span>
               </span>

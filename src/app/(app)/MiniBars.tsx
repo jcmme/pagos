@@ -57,7 +57,7 @@ export function MiniBars({
       </div>
 
       <div>
-        <p className="text-[12px] text-(--foreground-muted)">{period}</p>
+        <p className="text-[13px] text-(--foreground-muted)">{period}</p>
         <p className="font-semibold tabular-nums text-(--accent)">
           <span className="text-[22px]">{money.integer}</span>
           <span className="text-[13px] opacity-70">
@@ -73,7 +73,7 @@ export function MiniBars({
             <div className="flex h-9 w-full items-end justify-center">
               <div
                 className={cn(
-                  "w-[3px] rounded-(--radius-full) transition-[height] duration-500",
+                  "w-[3px] rounded-(--radius-full) transition-[height] duration-(--dur-slow)",
                   bar.current
                     ? "bg-(--accent)"
                     : bar.future

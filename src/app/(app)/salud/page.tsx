@@ -79,7 +79,7 @@ export default async function SaludPage() {
               <div>
                 <CardTitle>Tu score</CardTitle>
                 <p className="mt-1 text-[40px] font-semibold leading-none">{report.score}</p>
-                <p className="mt-1 text-[14px] text-(--foreground-muted)">
+                <p className="mt-1 text-[13px] text-(--foreground-muted)">
                   {scoreLabel(report.score)}
                 </p>
               </div>
@@ -98,7 +98,7 @@ export default async function SaludPage() {
         ) : (
           <>
             <CardTitle>Tu score</CardTitle>
-            <p className="mt-2 text-[14px] text-(--foreground-muted)">
+            <p className="mt-2 text-[13px] text-(--foreground-muted)">
               Todavía no hay movimientos suficientes para calcularlo. Llevas{" "}
               {report.transactionCount} y se necesitan al menos 10 para que el número
               signifique algo.

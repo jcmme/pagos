@@ -10,13 +10,14 @@ import { transactionSchema, quickTransactionSchema } from "./schema";
 
 export type { ActionState };
 
-const TOUCHED_PATHS = [
-  "/movimientos",
-  "/",
-  "/salud",
-  "/cuentas",
-  "/presupuestos",
-];
+// Las pantallas que de verdad cambian al tocar un movimiento, y ninguna más.
+//
+// Salud, Cuentas y Presupuestos salían de aquí, y revalidarlas obligaba a
+// rehacer sus consultas —el Resumen son unas cuarenta, Salud catorce— en cada
+// captura, aunque la persona estuviera en Movimientos y no fuera a mirarlas.
+// Las tres son `force-dynamic`, así que se recalculan solas al entrar: no
+// pueden quedarse con datos viejos por no estar en esta lista.
+const TOUCHED_PATHS = ["/movimientos", "/"];
 
 function revalidateAll() {
   for (const path of TOUCHED_PATHS) revalidatePath(path);

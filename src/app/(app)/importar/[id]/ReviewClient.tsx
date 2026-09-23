@@ -213,7 +213,7 @@ export function ReviewClient({
                         defaultValue={row.suggestedCategoryId ?? "none"}
                       />
                     </div>
-                    <label className="flex items-center gap-1.5 text-[12px] text-(--foreground-muted)">
+                    <label className="flex items-center gap-1.5 text-[13px] text-(--foreground-muted)">
                       <input
                         type="checkbox"
                         checked={learnFor.has(row.id)}
@@ -249,7 +249,7 @@ export function ReviewClient({
 
         {toReview.length === 0 && (
           <Card>
-            <p className="text-[14px] text-(--foreground-muted)">
+            <p className="text-[13px] text-(--foreground-muted)">
               No queda nada por revisar en esta importación.
             </p>
           </Card>
