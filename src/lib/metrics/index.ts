@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import { toNumber } from "@/lib/utils";
 import { HEALTH_TARGETS, HEALTH_WEIGHTS } from "@/lib/constants";
@@ -30,7 +31,9 @@ const MONTHS_OF_HISTORY = 6;
 // sale del 90% y todo marca perfecto.
 const MIN_TRANSACTIONS_FOR_SCORE = 10;
 
-export async function getHealthReport(
+// `cache()`: el Resumen y la pantalla de Salud piden el mismo reporte, y son
+// catorce consultas. Dentro de una misma petición se calcula una sola vez.
+export const getHealthReport = cache(async function getHealthReport(
   userId: string,
   now = new Date()
 ): Promise<HealthReport> {
@@ -255,4 +258,4 @@ export async function getHealthReport(
     },
     monthlyEssentials: avgEssentials,
   };
-}
+});

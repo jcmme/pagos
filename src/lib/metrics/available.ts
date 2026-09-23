@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import { toNumber } from "@/lib/utils";
 import { getAccountsWithBalances, liquidBalance } from "@/modules/accounts/balance";
@@ -18,7 +19,9 @@ export type AvailableToSpend = {
 
 // Cuánto puede gastar hoy sin quedarse corto: el saldo líquido menos lo que ya
 // está comprometido antes de que entre el siguiente ingreso.
-export async function getAvailableToSpend(
+// `cache()` por coherencia con las otras métricas: si dos partes de la misma
+// pantalla lo piden, se calcula una vez.
+export const getAvailableToSpend = cache(async function getAvailableToSpend(
   userId: string,
   now = new Date()
 ): Promise<AvailableToSpend> {
@@ -96,4 +99,4 @@ export async function getAvailableToSpend(
     nextIncomeAt: nextIncome ?? null,
     horizonDays,
   };
-}
+});

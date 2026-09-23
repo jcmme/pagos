@@ -52,7 +52,10 @@ async function snapshot(userId: string) {
       prisma.transaction.findMany({
         where: { userId },
         orderBy: { id: "asc" },
-        include: { tags: { select: { id: true }, orderBy: { id: "asc" } } },
+        // Por nombre y no por id, por lo mismo que las categorías: restaurar
+        // sobre una base que ya tiene la etiqueta reusa la que está, así que el
+        // id cambia y el dato no.
+        include: { tags: { select: { name: true }, orderBy: { name: "asc" } } },
       }),
       prisma.fixedPayment.findMany({ where: { userId }, orderBy: { id: "asc" } }),
       prisma.debt.findMany({
@@ -173,8 +176,29 @@ async function main() {
   // `Category_root_name_key`, que es exactamente el único escenario en el que
   // alguien restaura.
   await seedCategories(prisma);
+
+  // Y una etiqueta que choca por slug con una del archivo, si el archivo trae
+  // etiquetas. Un `slug` es único en toda la instancia, así que basta con que
+  // otra persona —o un seed— haya creado "viaje" para que el respaldo traiga
+  // una etiqueta que no se puede insertar por id.
+  //
+  // Esto tampoco estaba: el archivo del simulacro tenía etiquetas pero la base
+  // de destino quedaba sin ninguna, así que el choque nunca se daba. Ese hueco
+  // escondió que el camino del choque avisaba "se reusó" sin guardar el mapeo,
+  // y el enlace posterior pedía una etiqueta inexistente y tumbaba la
+  // transacción entera. Una etiqueta repetida bastaba para no poder restaurar.
+  const conEtiquetas = JSON.parse(file).tags as { name: string; slug: string }[];
+  if (conEtiquetas.length > 0) {
+    await prisma.tag.create({
+      data: { name: conEtiquetas[0].name, slug: conEtiquetas[0].slug },
+    });
+  }
+
   const sembrada = await prisma.category.count();
-  console.log(`  Desastre:   base vacía, resembrada con ${sembrada} categorías por defecto`);
+  console.log(
+    `  Desastre:   base vacía, resembrada con ${sembrada} categorías por defecto` +
+      (conEtiquetas.length > 0 ? ` y la etiqueta "${conEtiquetas[0].name}" ya ocupada` : "")
+  );
 
   // 3. Volver desde el archivo, validándolo como si lo hubiera subido alguien.
   const report = await restoreBackup(user.id, parseBackup(JSON.parse(file)));

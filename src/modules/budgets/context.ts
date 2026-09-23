@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import { toNumber } from "@/lib/utils";
 import { resolveIncome, type IncomeMode, type IncomeSource } from "@/modules/income/resolve";
@@ -20,7 +21,11 @@ export type BudgetContext = {
   savingsCategoryId: string | null;
 };
 
-export async function getBudgetContext(
+// `cache()` porque el Resumen la pedía CUATRO veces por petición: el layout
+// (para la hoja de captura), la propia página, el reporte de salud y el
+// generador de avisos. Son dos consultas cada vez, seis desperdiciadas. El
+// dedupe alcanza también entre el layout y la página, que comparten petición.
+export const getBudgetContext = cache(async function getBudgetContext(
   userId: string,
   month: number,
   year: number
@@ -51,4 +56,4 @@ export async function getBudgetContext(
     monthAmount: row ? toNumber(row.amount) : null,
     savingsCategoryId: savings?.id ?? null,
   };
-}
+});

@@ -316,18 +316,27 @@ export async function restoreBackup(
         categoryMap.set(category.id, category.id);
       }
 
+      // Mismo problema que las categorías y misma solución: el `slug` de una
+      // etiqueta es único en toda la instancia, así que sobre una base que ya
+      // tiene "viaje" el upsert por id chocaría. Se reusa la que está.
+      //
+      // El mapeo es obligatorio, no un adorno: sin él, el enlace de más abajo
+      // pediría la etiqueta por el id del archivo —que no se creó— y Prisma
+      // tumbaría la transacción entera con un P2025. O sea, una sola etiqueta
+      // repetida bastaba para que no se pudiera restaurar nada.
+      const tagMap = new Map<string, string>();
+
       for (const tag of backup.tags) {
-        // Por id y no por slug: el slug es único en toda la instancia, así que
-        // si otra persona ya creó "viaje" el upsert por id chocaría. Se salta
-        // y se avisa, en vez de tumbar la restauración entera por una etiqueta.
         const clash = await tx.tag.findFirst({
           where: { slug: tag.slug, id: { not: tag.id } },
         });
         if (clash) {
-          warnings.push(`La etiqueta "${tag.name}" ya existía con otro id; se reusó.`);
+          tagMap.set(tag.id, clash.id);
+          warnings.push(`La etiqueta "${tag.name}" ya existía; se reusó.`);
           continue;
         }
         await tx.tag.upsert({ where: { id: tag.id }, create: tag, update: tag });
+        tagMap.set(tag.id, tag.id);
       }
 
       await tx.account.createMany({ data: backup.accounts.map((a) => ({ ...a, userId })) });
@@ -365,7 +374,10 @@ export async function restoreBackup(
       const byTag = new Map<string, string[]>();
       for (const transaction of backup.transactions) {
         for (const tagId of transaction.tagIds) {
-          byTag.set(tagId, [...(byTag.get(tagId) ?? []), transaction.id]);
+          // Por la etiqueta que de verdad quedó, no por la del archivo.
+          const real = tagMap.get(tagId);
+          if (!real) continue;
+          byTag.set(real, [...(byTag.get(real) ?? []), transaction.id]);
         }
       }
       for (const [tagId, transactionIds] of byTag) {

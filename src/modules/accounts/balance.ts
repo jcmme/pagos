@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import { toNumber } from "@/lib/utils";
 
@@ -20,7 +21,13 @@ export type AccountWithBalance = {
 
 // El saldo nunca se guarda en la tabla: se deriva de initialBalance más los
 // movimientos. Así no puede desincronizarse si se edita o borra un movimiento.
-export async function getAccountsWithBalances(
+//
+// Va envuelta en `cache()` porque el Resumen la pedía TRES veces por carga —la
+// página, el reporte de salud y el disponible para gastar— y cada una son tres
+// consultas. `cache()` deduplica dentro de la misma petición: la primera
+// llamada consulta y las otras dos reciben el mismo resultado sin tocar la
+// base. Seis consultas menos por pantalla, y ninguna línea de lógica movida.
+export const getAccountsWithBalances = cache(async function getAccountsWithBalances(
   userId: string
 ): Promise<AccountWithBalance[]> {
   const [accounts, byAccount, transfersIn] = await Promise.all([
@@ -72,7 +79,7 @@ export async function getAccountsWithBalances(
     initialBalance: toNumber(account.initialBalance),
     balance: toNumber(account.initialBalance) + (deltas.get(account.id) ?? 0),
   }));
-}
+});
 
 export function liquidBalance(accounts: AccountWithBalance[]): number {
   return accounts

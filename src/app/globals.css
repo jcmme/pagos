@@ -449,6 +449,20 @@ body {
 .stagger > *:nth-child(9) { animation-delay: 320ms; }
 .stagger > *:nth-child(n + 10) { animation-delay: 360ms; }
 
+/* El esqueleto de carga respira en vez de parpadear. Un parpadeo marcado
+   llama la atención sobre la espera; una oscilación corta de opacidad dice
+   "viene en camino" y se queda en el fondo. El apagado por movimiento
+   reducido de más abajo lo deja quieto, y el esqueleto sigue sirviendo:
+   reservar el sitio para que nada salte al llegar los datos. */
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+.skeleton {
+  animation: pulse-soft 1.6s var(--ease-out) infinite;
+}
+
 /* Quien pide menos movimiento en su sistema lo pide por una razón: mareo,
    migraña o vértigo. No se suaviza, se apaga. */
 @media (prefers-reduced-motion: reduce) {
